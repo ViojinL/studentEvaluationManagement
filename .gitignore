@@ -53,6 +53,7 @@ logs/
 # Temporary files
 *.tmp
 *.temp
-./VSCodeCounter
 
-./data
+
+./data/
+.VSCodeCounter/
