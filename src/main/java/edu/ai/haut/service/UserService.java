@@ -65,7 +65,6 @@ public class UserService {
                 student.setGrade(rs.getString("grade"));
                 student.setMajor(rs.getString("major"));
                 student.setClassId(rs.getString("class_id"));
-                student.setContact(rs.getString("contact"));
                 student.setPassword(rs.getString("password"));
                 return student;
             }
@@ -92,7 +91,6 @@ public class UserService {
                 teacher.setGender(rs.getString("gender"));
                 teacher.setTitle(rs.getString("title"));
                 teacher.setCollege(rs.getString("college"));
-                teacher.setContact(rs.getString("contact"));
                 teacher.setPassword(rs.getString("password"));
                 return teacher;
             }
@@ -143,7 +141,6 @@ public class UserService {
                 staff.setGender(rs.getString("gender"));
                 staff.setDepartment(rs.getString("department"));
                 staff.setPosition(rs.getString("position"));
-                staff.setContact(rs.getString("contact"));
                 staff.setPassword(rs.getString("password"));
                 return staff;
             }

@@ -3,12 +3,16 @@ package edu.ai.haut.ui.admin;
 import edu.ai.haut.model.*;
 import edu.ai.haut.service.*;
 import edu.ai.haut.ui.LoginFrame;
+import edu.ai.haut.util.DatabaseUtil;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.util.List;
 import java.util.Map;
 
@@ -32,9 +36,11 @@ public class AdminMainFrame extends JFrame {
     private JTabbedPane tabbedPane;
     private JTable userTable;
     private JTable courseTable;
+    private JTable classTable;
     private JTable evaluationTable;
     private DefaultTableModel userTableModel;
     private DefaultTableModel courseTableModel;
+    private DefaultTableModel classTableModel;
     private DefaultTableModel evaluationTableModel;
     
     private JLabel welcomeLabel;
@@ -105,6 +111,19 @@ public class AdminMainFrame extends JFrame {
         courseTable.setRowHeight(30);
         courseTable.getTableHeader().setFont(new Font("微软雅黑", Font.BOLD, 12));
         courseTable.setFont(new Font("微软雅黑", Font.PLAIN, 12));
+
+        // 班级管理表格
+        String[] classColumns = {"班级编号", "班级名称", "年级", "专业", "学院", "学生数量"};
+        classTableModel = new DefaultTableModel(classColumns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+        classTable = new JTable(classTableModel);
+        classTable.setRowHeight(30);
+        classTable.getTableHeader().setFont(new Font("微软雅黑", Font.BOLD, 12));
+        classTable.setFont(new Font("微软雅黑", Font.PLAIN, 12));
         
         // 评教管理表格
         String[] evaluationColumns = {"周期编号", "周期名称", "学期", "开始日期", "结束日期", "状态", "评教数量"};
@@ -122,6 +141,7 @@ public class AdminMainFrame extends JFrame {
         // 设置表格样式
         setupTableStyle(userTable);
         setupTableStyle(courseTable);
+        setupTableStyle(classTable);
         setupTableStyle(evaluationTable);
     }
     
@@ -181,16 +201,20 @@ public class AdminMainFrame extends JFrame {
         
         // 用户管理面板
         JPanel userPanel = createUserManagementPanel();
-        
+
         // 课程管理面板
         JPanel coursePanel = createCourseManagementPanel();
-        
+
+        // 班级管理面板
+        JPanel classPanel = createClassManagementPanel();
+
         // 评教管理面板
         JPanel evaluationPanel = createEvaluationManagementPanel();
-        
+
         // 添加到选项卡
         tabbedPane.addTab("用户管理", userPanel);
         tabbedPane.addTab("课程管理", coursePanel);
+        tabbedPane.addTab("班级管理", classPanel);
         tabbedPane.addTab("评教管理", evaluationPanel);
         
         add(topPanel, BorderLayout.NORTH);
@@ -305,7 +329,58 @@ public class AdminMainFrame extends JFrame {
         
         return panel;
     }
-    
+
+    /**
+     * 创建班级管理面板
+     */
+    private JPanel createClassManagementPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBorder(BorderFactory.createTitledBorder("班级管理"));
+
+        // 工具栏
+        JPanel toolPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+
+        JButton addClassButton = new JButton("添加班级");
+        JButton editClassButton = new JButton("编辑班级");
+        JButton deleteClassButton = new JButton("删除班级");
+        JButton classStudentsButton = new JButton("班级学生");
+
+        addClassButton.setBackground(new Color(60, 179, 113));
+        addClassButton.setForeground(Color.WHITE);
+        addClassButton.setFocusPainted(false);
+
+        editClassButton.setBackground(new Color(255, 165, 0));
+        editClassButton.setForeground(Color.WHITE);
+        editClassButton.setFocusPainted(false);
+
+        deleteClassButton.setBackground(new Color(220, 20, 60));
+        deleteClassButton.setForeground(Color.WHITE);
+        deleteClassButton.setFocusPainted(false);
+
+        classStudentsButton.setBackground(new Color(70, 130, 180));
+        classStudentsButton.setForeground(Color.WHITE);
+        classStudentsButton.setFocusPainted(false);
+
+        toolPanel.add(addClassButton);
+        toolPanel.add(editClassButton);
+        toolPanel.add(deleteClassButton);
+        toolPanel.add(classStudentsButton);
+
+        panel.add(toolPanel, BorderLayout.NORTH);
+
+        JScrollPane classScrollPane = new JScrollPane(classTable);
+        classScrollPane.setPreferredSize(new Dimension(800, 400));
+        panel.add(classScrollPane, BorderLayout.CENTER);
+
+        // 设置按钮事件
+        addClassButton.addActionListener(e -> showAddClassDialog());
+        editClassButton.addActionListener(e -> showEditClassDialog());
+        deleteClassButton.addActionListener(e -> deleteSelectedClass());
+        classStudentsButton.addActionListener(e -> showClassStudentsDialog());
+
+        return panel;
+    }
+
     /**
      * 创建评教管理面板
      */
@@ -382,6 +457,7 @@ public class AdminMainFrame extends JFrame {
     private void loadData() {
         loadUserData();
         loadCourseData();
+        loadClassData();
         loadEvaluationData();
     }
     
@@ -520,7 +596,35 @@ public class AdminMainFrame extends JFrame {
                 "错误", JOptionPane.ERROR_MESSAGE);
         }
     }
-    
+
+    /**
+     * 加载班级数据
+     */
+    private void loadClassData() {
+        classTableModel.setRowCount(0);
+
+        try {
+            List<ClassRoom> classes = classService.getAllClasses();
+            for (ClassRoom classRoom : classes) {
+                // 获取班级学生数量
+                int studentCount = studentService.getStudentCountByClass(classRoom.getClassId());
+
+                Object[] row = {
+                    classRoom.getClassId(),
+                    classRoom.getClassName(),
+                    classRoom.getGrade(),
+                    classRoom.getMajor(),
+                    classRoom.getCollege(),
+                    studentCount
+                };
+                classTableModel.addRow(row);
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "加载班级数据失败: " + e.getMessage(),
+                "错误", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
     /**
      * 加载评教数据
      */
@@ -566,7 +670,6 @@ public class AdminMainFrame extends JFrame {
         JTextField nameField = new JTextField(15);
         JComboBox<String> genderComboBox = new JComboBox<>(new String[]{"男", "女"});
         JPasswordField passwordField = new JPasswordField(15);
-        JTextField contactField = new JTextField(15);
 
         // 添加通用字段
         gbc.gridx = 0; gbc.gridy = 0; gbc.anchor = GridBagConstraints.EAST;
@@ -589,13 +692,10 @@ public class AdminMainFrame extends JFrame {
         gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
         panel.add(passwordField, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 4; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
-        panel.add(new JLabel("联系方式:"), gbc);
-        gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(contactField, gbc);
+
 
         // 根据用户类型添加特定字段
-        int currentRow = 5;
+        int currentRow = 4;
         JTextField extraField1 = new JTextField(15);
         JTextField extraField2 = new JTextField(15);
         JTextField extraField3 = new JTextField(15);
@@ -672,7 +772,6 @@ public class AdminMainFrame extends JFrame {
                 String name = nameField.getText().trim();
                 String gender = (String) genderComboBox.getSelectedItem();
                 String password = new String(passwordField.getPassword());
-                String contact = contactField.getText().trim();
 
                 if (id.isEmpty() || name.isEmpty() || password.isEmpty()) {
                     JOptionPane.showMessageDialog(dialog, "请填写所有必填字段", "错误", JOptionPane.ERROR_MESSAGE);
@@ -698,21 +797,21 @@ public class AdminMainFrame extends JFrame {
                             classService.createClass(classRoom);
                         }
 
-                        Student student = new Student(id, name, gender, grade, major, classRoom.getClassId(), contact, password);
+                        Student student = new Student(id, name, gender, grade, major, classRoom.getClassId(), password);
                         success = studentService.registerStudent(student);
                         break;
 
                     case "教师":
                         String title = (String) titleComboBox.getSelectedItem();
                         String college = extraField2.getText().trim();
-                        Teacher teacher = new Teacher(id, name, gender, title, college, contact, password);
+                        Teacher teacher = new Teacher(id, name, gender, title, college, password);
                         success = teacherService.registerTeacher(teacher);
                         break;
 
                     case "教务人员":
                         String department = (String) departmentComboBox.getSelectedItem();
                         String position = extraField2.getText().trim();
-                        AcademicAffairsStaff staff = new AcademicAffairsStaff(id, name, gender, department, position, contact, password);
+                        AcademicAffairsStaff staff = new AcademicAffairsStaff(id, name, gender, department, position, password);
                         success = new AcademicAffairsStaffService().registerStaff(staff);
                         break;
                 }
@@ -765,7 +864,6 @@ public class AdminMainFrame extends JFrame {
 
         JTextField nameField = new JTextField(userName, 15);
         JComboBox<String> genderComboBox = new JComboBox<>(new String[]{"男", "女"});
-        JTextField contactField = new JTextField(15);
 
         gbc.gridx = 0; gbc.gridy = 0; gbc.anchor = GridBagConstraints.EAST;
         panel.add(new JLabel(userType + "ID:"), gbc);
@@ -782,11 +880,6 @@ public class AdminMainFrame extends JFrame {
         gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
         panel.add(genderComboBox, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 3; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
-        panel.add(new JLabel("联系方式:"), gbc);
-        gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(contactField, gbc);
-
         // 根据用户类型加载现有数据
         try {
             switch (userType) {
@@ -794,21 +887,18 @@ public class AdminMainFrame extends JFrame {
                     Student student = studentService.getStudentById(userId);
                     if (student != null) {
                         genderComboBox.setSelectedItem(student.getGender());
-                        contactField.setText(student.getContact());
                     }
                     break;
                 case "教师":
                     Teacher teacher = teacherService.getTeacherById(userId);
                     if (teacher != null) {
                         genderComboBox.setSelectedItem(teacher.getGender());
-                        contactField.setText(teacher.getContact());
                     }
                     break;
                 case "教务人员":
                     AcademicAffairsStaff staff = new AcademicAffairsStaffService().getStaffById(userId);
                     if (staff != null) {
                         genderComboBox.setSelectedItem(staff.getGender());
-                        contactField.setText(staff.getContact());
                     }
                     break;
             }
@@ -832,7 +922,7 @@ public class AdminMainFrame extends JFrame {
         buttonPanel.add(saveButton);
         buttonPanel.add(cancelButton);
 
-        gbc.gridx = 0; gbc.gridy = 4;
+        gbc.gridx = 0; gbc.gridy = 3;
         gbc.gridwidth = 2; gbc.fill = GridBagConstraints.HORIZONTAL;
         panel.add(buttonPanel, gbc);
 
@@ -841,7 +931,6 @@ public class AdminMainFrame extends JFrame {
             try {
                 String name = nameField.getText().trim();
                 String gender = (String) genderComboBox.getSelectedItem();
-                String contact = contactField.getText().trim();
 
                 if (name.isEmpty()) {
                     JOptionPane.showMessageDialog(dialog, "姓名不能为空", "错误", JOptionPane.ERROR_MESSAGE);
@@ -855,7 +944,6 @@ public class AdminMainFrame extends JFrame {
                         if (student != null) {
                             student.setName(name);
                             student.setGender(gender);
-                            student.setContact(contact);
                             success = studentService.updateStudent(student);
                         }
                         break;
@@ -864,7 +952,6 @@ public class AdminMainFrame extends JFrame {
                         if (teacher != null) {
                             teacher.setName(name);
                             teacher.setGender(gender);
-                            teacher.setContact(contact);
                             success = teacherService.updateTeacher(teacher);
                         }
                         break;
@@ -873,7 +960,6 @@ public class AdminMainFrame extends JFrame {
                         if (staff != null) {
                             staff.setName(name);
                             staff.setGender(gender);
-                            staff.setContact(contact);
                             success = new AcademicAffairsStaffService().updateStaff(staff);
                         }
                         break;
@@ -1175,9 +1261,13 @@ public class AdminMainFrame extends JFrame {
                     course.setCourseType(courseType);
                     course.setCollege(college);
 
-                    // 这里需要在CourseService中添加updateCourse方法
-                    JOptionPane.showMessageDialog(dialog, "课程更新功能需要在CourseService中实现updateCourse方法", "提示", JOptionPane.INFORMATION_MESSAGE);
-                    dialog.dispose();
+                    if (courseService.updateCourse(course)) {
+                        JOptionPane.showMessageDialog(dialog, "课程更新成功", "成功", JOptionPane.INFORMATION_MESSAGE);
+                        loadCourseData(); // 刷新课程数据
+                        dialog.dispose();
+                    } else {
+                        JOptionPane.showMessageDialog(dialog, "课程更新失败", "错误", JOptionPane.ERROR_MESSAGE);
+                    }
 
                 } catch (Exception ex) {
                     JOptionPane.showMessageDialog(dialog, "更新课程时发生错误: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
@@ -1248,7 +1338,9 @@ public class AdminMainFrame extends JFrame {
         JTable offeringTable = new JTable(offeringTableModel);
         offeringTable.setRowHeight(25);
 
-        // 加载开课信息（这里需要实现获取所有开课信息的方法）
+        // 加载开课信息
+        loadOfferingData(offeringTableModel);
+
         JScrollPane scrollPane = new JScrollPane(offeringTable);
         panel.add(scrollPane, BorderLayout.CENTER);
 
@@ -1284,12 +1376,49 @@ public class AdminMainFrame extends JFrame {
 
         // 按钮事件
         addButton.addActionListener(e -> showAddCourseOfferingDialog(dialog, offeringTableModel));
-        editButton.addActionListener(e -> JOptionPane.showMessageDialog(dialog, "编辑开课功能待实现", "提示", JOptionPane.INFORMATION_MESSAGE));
+        editButton.addActionListener(e -> showEditCourseOfferingDialog(dialog, offeringTable, offeringTableModel));
         deleteButton.addActionListener(e -> JOptionPane.showMessageDialog(dialog, "删除开课功能待实现", "提示", JOptionPane.INFORMATION_MESSAGE));
         closeButton.addActionListener(e -> dialog.dispose());
 
         dialog.add(panel);
         dialog.setVisible(true);
+    }
+
+    /**
+     * 加载开课数据
+     */
+    private void loadOfferingData(DefaultTableModel tableModel) {
+        tableModel.setRowCount(0);
+
+        try {
+            List<CourseOffering> offerings = courseService.getAllCourseOfferings();
+            for (CourseOffering offering : offerings) {
+                // 获取课程名称
+                Course course = courseService.getCourseById(offering.getCourseId());
+                String courseName = course != null ? course.getCourseName() : "未知课程";
+
+                // 获取教师名称
+                Teacher teacher = teacherService.getTeacherById(offering.getTeacherId());
+                String teacherName = teacher != null ? teacher.getName() : "未知教师";
+
+                // 获取班级名称
+                ClassRoom classRoom = courseService.getClassRoomById(offering.getClassId());
+                String className = classRoom != null ? classRoom.getClassName() : "未知班级";
+
+                Object[] row = {
+                    offering.getOfferingId(),
+                    courseName,
+                    teacherName,
+                    className,
+                    offering.getSemester(),
+                    offering.getSchedule()
+                };
+                tableModel.addRow(row);
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "加载开课数据失败: " + e.getMessage(),
+                "错误", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     /**
@@ -1323,7 +1452,7 @@ public class AdminMainFrame extends JFrame {
                 teacherComboBox.addItem(teacher.getTeacherId() + " - " + teacher.getName());
             }
 
-            List<ClassRoom> classes = classService.getAllClasses();
+            List<ClassRoom> classes = courseService.getAllClassRooms();
             for (ClassRoom classRoom : classes) {
                 classComboBox.addItem(classRoom.getClassId() + " - " + classRoom.getClassName());
             }
@@ -1426,7 +1555,512 @@ public class AdminMainFrame extends JFrame {
         dialog.add(panel);
         dialog.setVisible(true);
     }
-    
+
+    /**
+     * 显示添加班级对话框
+     */
+    private void showAddClassDialog() {
+        JDialog dialog = new JDialog(this, "添加班级", true);
+        dialog.setSize(400, 350);
+        dialog.setLocationRelativeTo(this);
+
+        JPanel panel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(8, 8, 8, 8);
+
+        JTextField classIdField = new JTextField(15);
+        JTextField classNameField = new JTextField(15);
+        JTextField gradeField = new JTextField(15);
+        JTextField majorField = new JTextField(15);
+        JTextField collegeField = new JTextField("信息科学与工程学院", 15);
+
+        gbc.gridx = 0; gbc.gridy = 0; gbc.anchor = GridBagConstraints.EAST;
+        panel.add(new JLabel("班级编号:"), gbc);
+        gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
+        panel.add(classIdField, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 1; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
+        panel.add(new JLabel("班级名称:"), gbc);
+        gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
+        panel.add(classNameField, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 2; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
+        panel.add(new JLabel("年级:"), gbc);
+        gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
+        panel.add(gradeField, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 3; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
+        panel.add(new JLabel("专业:"), gbc);
+        gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
+        panel.add(majorField, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 4; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
+        panel.add(new JLabel("学院:"), gbc);
+        gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
+        panel.add(collegeField, gbc);
+
+        // 按钮面板
+        JPanel buttonPanel = new JPanel(new FlowLayout());
+        JButton saveButton = new JButton("保存");
+        JButton cancelButton = new JButton("取消");
+
+        saveButton.setBackground(new Color(60, 179, 113));
+        saveButton.setForeground(Color.WHITE);
+        saveButton.setFocusPainted(false);
+
+        cancelButton.setBackground(new Color(220, 20, 60));
+        cancelButton.setForeground(Color.WHITE);
+        cancelButton.setFocusPainted(false);
+
+        buttonPanel.add(saveButton);
+        buttonPanel.add(cancelButton);
+
+        gbc.gridx = 0; gbc.gridy = 5;
+        gbc.gridwidth = 2; gbc.fill = GridBagConstraints.HORIZONTAL;
+        panel.add(buttonPanel, gbc);
+
+        // 保存按钮事件
+        saveButton.addActionListener(e -> {
+            try {
+                String classId = classIdField.getText().trim();
+                String className = classNameField.getText().trim();
+                String grade = gradeField.getText().trim();
+                String major = majorField.getText().trim();
+                String college = collegeField.getText().trim();
+
+                if (classId.isEmpty() || className.isEmpty() || grade.isEmpty() ||
+                    major.isEmpty() || college.isEmpty()) {
+                    JOptionPane.showMessageDialog(dialog, "请填写所有字段", "错误", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                ClassRoom classRoom = new ClassRoom();
+                classRoom.setClassId(classId);
+                classRoom.setClassName(className);
+                classRoom.setGrade(grade);
+                classRoom.setMajor(major);
+                classRoom.setCollege(college);
+
+                if (classService.createClass(classRoom)) {
+                    JOptionPane.showMessageDialog(dialog, "班级添加成功", "成功", JOptionPane.INFORMATION_MESSAGE);
+                    dialog.dispose();
+                    loadClassData(); // 刷新班级列表
+                } else {
+                    JOptionPane.showMessageDialog(dialog, "班级添加失败，可能班级编号已存在", "错误", JOptionPane.ERROR_MESSAGE);
+                }
+
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(dialog, "添加班级时发生错误: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        cancelButton.addActionListener(e -> dialog.dispose());
+
+        dialog.add(panel);
+        dialog.setVisible(true);
+    }
+
+    /**
+     * 显示编辑班级对话框
+     */
+    private void showEditClassDialog() {
+        int selectedRow = classTable.getSelectedRow();
+        if (selectedRow < 0) {
+            JOptionPane.showMessageDialog(this, "请选择要编辑的班级", "提示", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        String classId = (String) classTableModel.getValueAt(selectedRow, 0);
+
+        try {
+            ClassRoom classRoom = classService.getClassById(classId);
+            if (classRoom == null) {
+                JOptionPane.showMessageDialog(this, "班级信息不存在", "错误", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            JDialog dialog = new JDialog(this, "编辑班级 - " + classRoom.getClassName(), true);
+            dialog.setSize(400, 350);
+            dialog.setLocationRelativeTo(this);
+
+            JPanel panel = new JPanel(new GridBagLayout());
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.insets = new Insets(8, 8, 8, 8);
+
+            JTextField classIdField = new JTextField(classRoom.getClassId(), 15);
+            classIdField.setEditable(false);
+            classIdField.setBackground(Color.LIGHT_GRAY);
+
+            JTextField classNameField = new JTextField(classRoom.getClassName(), 15);
+            JTextField gradeField = new JTextField(classRoom.getGrade(), 15);
+            JTextField majorField = new JTextField(classRoom.getMajor(), 15);
+            JTextField collegeField = new JTextField(classRoom.getCollege(), 15);
+
+            gbc.gridx = 0; gbc.gridy = 0; gbc.anchor = GridBagConstraints.EAST;
+            panel.add(new JLabel("班级编号:"), gbc);
+            gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
+            panel.add(classIdField, gbc);
+
+            gbc.gridx = 0; gbc.gridy = 1; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
+            panel.add(new JLabel("班级名称:"), gbc);
+            gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
+            panel.add(classNameField, gbc);
+
+            gbc.gridx = 0; gbc.gridy = 2; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
+            panel.add(new JLabel("年级:"), gbc);
+            gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
+            panel.add(gradeField, gbc);
+
+            gbc.gridx = 0; gbc.gridy = 3; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
+            panel.add(new JLabel("专业:"), gbc);
+            gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
+            panel.add(majorField, gbc);
+
+            gbc.gridx = 0; gbc.gridy = 4; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
+            panel.add(new JLabel("学院:"), gbc);
+            gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
+            panel.add(collegeField, gbc);
+
+            // 按钮面板
+            JPanel buttonPanel = new JPanel(new FlowLayout());
+            JButton saveButton = new JButton("保存");
+            JButton cancelButton = new JButton("取消");
+
+            saveButton.setBackground(new Color(60, 179, 113));
+            saveButton.setForeground(Color.WHITE);
+            saveButton.setFocusPainted(false);
+
+            cancelButton.setBackground(new Color(220, 20, 60));
+            cancelButton.setForeground(Color.WHITE);
+            cancelButton.setFocusPainted(false);
+
+            buttonPanel.add(saveButton);
+            buttonPanel.add(cancelButton);
+
+            gbc.gridx = 0; gbc.gridy = 5;
+            gbc.gridwidth = 2; gbc.fill = GridBagConstraints.HORIZONTAL;
+            panel.add(buttonPanel, gbc);
+
+            // 保存按钮事件
+            saveButton.addActionListener(e -> {
+                try {
+                    String className = classNameField.getText().trim();
+                    String grade = gradeField.getText().trim();
+                    String major = majorField.getText().trim();
+                    String college = collegeField.getText().trim();
+
+                    if (className.isEmpty() || grade.isEmpty() || major.isEmpty() || college.isEmpty()) {
+                        JOptionPane.showMessageDialog(dialog, "请填写所有字段", "错误", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+
+                    classRoom.setClassName(className);
+                    classRoom.setGrade(grade);
+                    classRoom.setMajor(major);
+                    classRoom.setCollege(college);
+
+                    if (classService.updateClass(classRoom)) {
+                        JOptionPane.showMessageDialog(dialog, "班级更新成功", "成功", JOptionPane.INFORMATION_MESSAGE);
+                        loadClassData(); // 刷新班级数据
+                        dialog.dispose();
+                    } else {
+                        JOptionPane.showMessageDialog(dialog, "班级更新失败", "错误", JOptionPane.ERROR_MESSAGE);
+                    }
+
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(dialog, "更新班级时发生错误: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                }
+            });
+
+            cancelButton.addActionListener(e -> dialog.dispose());
+
+            dialog.add(panel);
+            dialog.setVisible(true);
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "加载班级信息失败: " + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    /**
+     * 删除选中的班级
+     */
+    private void deleteSelectedClass() {
+        int selectedRow = classTable.getSelectedRow();
+        if (selectedRow < 0) {
+            JOptionPane.showMessageDialog(this, "请选择要删除的班级", "提示", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        String classId = (String) classTableModel.getValueAt(selectedRow, 0);
+        String className = (String) classTableModel.getValueAt(selectedRow, 1);
+
+        int option = JOptionPane.showConfirmDialog(this,
+            String.format("确定要删除班级：%s (%s) 吗？\n注意：删除班级前请确保该班级下没有学生。", className, classId),
+            "确认删除",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.WARNING_MESSAGE);
+
+        if (option == JOptionPane.YES_OPTION) {
+            try {
+                if (classService.deleteClass(classId)) {
+                    JOptionPane.showMessageDialog(this, "班级删除成功", "成功", JOptionPane.INFORMATION_MESSAGE);
+                    loadClassData(); // 刷新班级列表
+                } else {
+                    JOptionPane.showMessageDialog(this, "班级删除失败，可能该班级下还有学生", "错误", JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(this, "删除班级时发生错误: " + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    /**
+     * 显示班级学生对话框
+     */
+    private void showClassStudentsDialog() {
+        int selectedRow = classTable.getSelectedRow();
+        if (selectedRow < 0) {
+            JOptionPane.showMessageDialog(this, "请选择要查看的班级", "提示", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        String classId = (String) classTableModel.getValueAt(selectedRow, 0);
+        String className = (String) classTableModel.getValueAt(selectedRow, 1);
+
+        JDialog dialog = new JDialog(this, "班级学生 - " + className, true);
+        dialog.setSize(700, 500);
+        dialog.setLocationRelativeTo(this);
+
+        JPanel panel = new JPanel(new BorderLayout());
+
+        // 学生列表
+        String[] columns = {"学号", "姓名", "性别", "年级", "专业"};
+        DefaultTableModel studentTableModel = new DefaultTableModel(columns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+        JTable studentTable = new JTable(studentTableModel);
+        studentTable.setRowHeight(25);
+        setupTableStyle(studentTable);
+
+        // 加载班级学生数据
+        try {
+            List<Student> students = studentService.getStudentsByClass(classId);
+            for (Student student : students) {
+                Object[] row = {
+                    student.getStudentId(),
+                    student.getName(),
+                    student.getGender(),
+                    student.getGrade(),
+                    student.getMajor()
+                };
+                studentTableModel.addRow(row);
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(dialog, "加载学生数据失败: " + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+        }
+
+        JScrollPane scrollPane = new JScrollPane(studentTable);
+        panel.add(scrollPane, BorderLayout.CENTER);
+
+        // 底部信息
+        JLabel infoLabel = new JLabel("班级：" + className + "，学生总数：" + studentTableModel.getRowCount() + " 人");
+        infoLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        panel.add(infoLabel, BorderLayout.SOUTH);
+
+        // 关闭按钮
+        JPanel buttonPanel = new JPanel(new FlowLayout());
+        JButton closeButton = new JButton("关闭");
+        closeButton.setBackground(new Color(70, 130, 180));
+        closeButton.setForeground(Color.WHITE);
+        closeButton.setFocusPainted(false);
+        closeButton.addActionListener(e -> dialog.dispose());
+        buttonPanel.add(closeButton);
+
+        panel.add(buttonPanel, BorderLayout.SOUTH);
+
+        dialog.add(panel);
+        dialog.setVisible(true);
+    }
+
+    /**
+     * 显示编辑开课对话框
+     */
+    private void showEditCourseOfferingDialog(JDialog parentDialog, JTable offeringTable, DefaultTableModel tableModel) {
+        int selectedRow = offeringTable.getSelectedRow();
+        if (selectedRow < 0) {
+            JOptionPane.showMessageDialog(parentDialog, "请选择要编辑的开课", "提示", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        String offeringId = (String) tableModel.getValueAt(selectedRow, 0);
+
+        try {
+            CourseOffering offering = courseService.getCourseOfferingById(offeringId);
+            if (offering == null) {
+                JOptionPane.showMessageDialog(parentDialog, "开课信息不存在", "错误", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            JDialog dialog = new JDialog(parentDialog, "编辑开课 - " + offeringId, true);
+            dialog.setSize(450, 400);
+            dialog.setLocationRelativeTo(parentDialog);
+
+            JPanel panel = new JPanel(new GridBagLayout());
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.insets = new Insets(8, 8, 8, 8);
+
+            JTextField offeringIdField = new JTextField(offering.getOfferingId(), 15);
+            offeringIdField.setEditable(false);
+            offeringIdField.setBackground(Color.LIGHT_GRAY);
+
+            JComboBox<String> courseComboBox = new JComboBox<>();
+            JComboBox<String> teacherComboBox = new JComboBox<>();
+            JComboBox<String> classComboBox = new JComboBox<>();
+            JTextField semesterField = new JTextField(offering.getSemester(), 15);
+            JTextField scheduleField = new JTextField(offering.getSchedule(), 15);
+
+            // 加载数据到下拉框
+            try {
+                List<Course> courses = courseService.getAllCourses();
+                for (Course course : courses) {
+                    String item = course.getCourseId() + " - " + course.getCourseName();
+                    courseComboBox.addItem(item);
+                    if (course.getCourseId().equals(offering.getCourseId())) {
+                        courseComboBox.setSelectedItem(item);
+                    }
+                }
+
+                List<Teacher> teachers = teacherService.getAllTeachers();
+                for (Teacher teacher : teachers) {
+                    String item = teacher.getTeacherId() + " - " + teacher.getName();
+                    teacherComboBox.addItem(item);
+                    if (teacher.getTeacherId().equals(offering.getTeacherId())) {
+                        teacherComboBox.setSelectedItem(item);
+                    }
+                }
+
+                List<ClassRoom> classes = courseService.getAllClassRooms();
+                for (ClassRoom classRoom : classes) {
+                    String item = classRoom.getClassId() + " - " + classRoom.getClassName();
+                    classComboBox.addItem(item);
+                    if (classRoom.getClassId().equals(offering.getClassId())) {
+                        classComboBox.setSelectedItem(item);
+                    }
+                }
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(dialog, "加载数据失败: " + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            // 布局组件
+            gbc.gridx = 0; gbc.gridy = 0; gbc.anchor = GridBagConstraints.EAST;
+            panel.add(new JLabel("开课编号:"), gbc);
+            gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST;
+            panel.add(offeringIdField, gbc);
+
+            gbc.gridx = 0; gbc.gridy = 1; gbc.anchor = GridBagConstraints.EAST;
+            panel.add(new JLabel("课程:"), gbc);
+            gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST;
+            panel.add(courseComboBox, gbc);
+
+            gbc.gridx = 0; gbc.gridy = 2; gbc.anchor = GridBagConstraints.EAST;
+            panel.add(new JLabel("授课教师:"), gbc);
+            gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST;
+            panel.add(teacherComboBox, gbc);
+
+            gbc.gridx = 0; gbc.gridy = 3; gbc.anchor = GridBagConstraints.EAST;
+            panel.add(new JLabel("班级:"), gbc);
+            gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST;
+            panel.add(classComboBox, gbc);
+
+            gbc.gridx = 0; gbc.gridy = 4; gbc.anchor = GridBagConstraints.EAST;
+            panel.add(new JLabel("学期:"), gbc);
+            gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST;
+            panel.add(semesterField, gbc);
+
+            gbc.gridx = 0; gbc.gridy = 5; gbc.anchor = GridBagConstraints.EAST;
+            panel.add(new JLabel("上课时间:"), gbc);
+            gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST;
+            panel.add(scheduleField, gbc);
+
+            // 按钮面板
+            JPanel buttonPanel = new JPanel(new FlowLayout());
+            JButton saveButton = new JButton("保存");
+            JButton cancelButton = new JButton("取消");
+
+            saveButton.setBackground(new Color(60, 179, 113));
+            saveButton.setForeground(Color.WHITE);
+            saveButton.setFocusPainted(false);
+
+            cancelButton.setBackground(new Color(220, 20, 60));
+            cancelButton.setForeground(Color.WHITE);
+            cancelButton.setFocusPainted(false);
+
+            buttonPanel.add(saveButton);
+            buttonPanel.add(cancelButton);
+
+            gbc.gridx = 0; gbc.gridy = 6; gbc.gridwidth = 2; gbc.fill = GridBagConstraints.HORIZONTAL;
+            panel.add(buttonPanel, gbc);
+
+            // 保存按钮事件
+            saveButton.addActionListener(e -> {
+                try {
+                    String courseSelection = (String) courseComboBox.getSelectedItem();
+                    String teacherSelection = (String) teacherComboBox.getSelectedItem();
+                    String classSelection = (String) classComboBox.getSelectedItem();
+                    String semester = semesterField.getText().trim();
+                    String schedule = scheduleField.getText().trim();
+
+                    if (courseSelection == null || teacherSelection == null || classSelection == null ||
+                        semester.isEmpty() || schedule.isEmpty()) {
+                        JOptionPane.showMessageDialog(dialog, "请填写所有必填字段", "错误", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+
+                    // 解析选择的ID
+                    String courseId = courseSelection.split(" - ")[0];
+                    String teacherId = teacherSelection.split(" - ")[0];
+                    String classId = classSelection.split(" - ")[0];
+
+                    offering.setCourseId(courseId);
+                    offering.setTeacherId(teacherId);
+                    offering.setClassId(classId);
+                    offering.setSemester(semester);
+                    offering.setSchedule(schedule);
+
+                    if (courseService.updateCourseOffering(offering)) {
+                        // 更新表格
+                        tableModel.setValueAt(courseSelection.split(" - ")[1], selectedRow, 1);
+                        tableModel.setValueAt(teacherSelection.split(" - ")[1], selectedRow, 2);
+                        tableModel.setValueAt(classSelection.split(" - ")[1], selectedRow, 3);
+                        tableModel.setValueAt(semester, selectedRow, 4);
+                        tableModel.setValueAt(schedule, selectedRow, 5);
+
+                        JOptionPane.showMessageDialog(dialog, "开课更新成功", "成功", JOptionPane.INFORMATION_MESSAGE);
+                        dialog.dispose();
+                    } else {
+                        JOptionPane.showMessageDialog(dialog, "开课更新失败", "错误", JOptionPane.ERROR_MESSAGE);
+                    }
+
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(dialog, "更新开课时发生错误: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                }
+            });
+
+            cancelButton.addActionListener(e -> dialog.dispose());
+
+            dialog.add(panel);
+            dialog.setVisible(true);
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(parentDialog, "加载开课信息失败: " + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
     /**
      * 显示创建评教周期对话框
      */
@@ -1949,140 +2583,453 @@ public class AdminMainFrame extends JFrame {
      */
     private void showEvaluationStatistics() {
         JDialog dialog = new JDialog(this, "评教统计分析", true);
-        dialog.setSize(700, 600);
+        dialog.setSize(900, 700);
         dialog.setLocationRelativeTo(this);
 
-        JPanel panel = new JPanel(new BorderLayout());
+        JPanel mainPanel = new JPanel(new BorderLayout());
 
-        // 选择面板
-        JPanel selectPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        // 顶部控制面板
+        JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        controlPanel.setBorder(BorderFactory.createTitledBorder("统计条件"));
+
         JComboBox<String> periodComboBox = new JComboBox<>();
-        JComboBox<String> statsTypeComboBox = new JComboBox<>(new String[]{"学生参与统计", "教师评教统计", "课程评教统计", "班级评教统计"});
+        JComboBox<String> statisticsTypeComboBox = new JComboBox<>(new String[]{
+            "总体统计", "教师排名", "课程排名", "班级统计", "学院统计"
+        });
 
         // 加载评教周期
         try {
             List<EvaluationPeriod> periods = evaluationService.getAllEvaluationPeriods();
             for (EvaluationPeriod period : periods) {
-                periodComboBox.addItem(period.getPeriodName() + " (" + period.getSemester() + ")");
+                periodComboBox.addItem(period.getPeriodId() + " - " + period.getPeriodName());
             }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(dialog, "加载评教周期失败: " + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
         }
 
-        selectPanel.add(new JLabel("评教周期:"));
-        selectPanel.add(periodComboBox);
-        selectPanel.add(new JLabel("统计类型:"));
-        selectPanel.add(statsTypeComboBox);
+        JButton generateButton = new JButton("生成统计");
 
-        JButton queryButton = new JButton("查询统计");
-        queryButton.setBackground(new Color(70, 130, 180));
-        queryButton.setForeground(Color.WHITE);
-        queryButton.setFocusPainted(false);
-        selectPanel.add(queryButton);
+        generateButton.setBackground(new Color(70, 130, 180));
+        generateButton.setForeground(Color.WHITE);
+        generateButton.setFocusPainted(false);
 
-        panel.add(selectPanel, BorderLayout.NORTH);
+        controlPanel.add(new JLabel("评教周期:"));
+        controlPanel.add(periodComboBox);
+        controlPanel.add(new JLabel("统计类型:"));
+        controlPanel.add(statisticsTypeComboBox);
+        controlPanel.add(generateButton);
+
+        mainPanel.add(controlPanel, BorderLayout.NORTH);
 
         // 统计结果显示区域
-        JTextArea resultArea = new JTextArea();
-        resultArea.setEditable(false);
-        resultArea.setFont(new Font("微软雅黑", Font.PLAIN, 12));
-        resultArea.setBackground(new Color(248, 248, 248));
+        JTabbedPane resultTabbedPane = new JTabbedPane();
 
-        JScrollPane scrollPane = new JScrollPane(resultArea);
-        scrollPane.setPreferredSize(new Dimension(650, 450));
-        panel.add(scrollPane, BorderLayout.CENTER);
+        // 数据统计表格
+        String[] columns = {"项目", "数值", "百分比", "排名", "备注"};
+        DefaultTableModel statisticsTableModel = new DefaultTableModel(columns, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
 
-        // 按钮面板
+        JTable statisticsTable = new JTable(statisticsTableModel);
+        statisticsTable.setRowHeight(30);
+        statisticsTable.getTableHeader().setFont(new Font("微软雅黑", Font.BOLD, 12));
+        statisticsTable.setFont(new Font("微软雅黑", Font.PLAIN, 12));
+        setupTableStyle(statisticsTable);
+
+        JScrollPane tableScrollPane = new JScrollPane(statisticsTable);
+        resultTabbedPane.addTab("数据统计", tableScrollPane);
+
+        // 详细分析文本区域
+        JTextArea analysisArea = new JTextArea();
+        analysisArea.setFont(new Font("微软雅黑", Font.PLAIN, 12));
+        analysisArea.setEditable(false);
+        analysisArea.setLineWrap(true);
+        analysisArea.setWrapStyleWord(true);
+
+        JScrollPane analysisScrollPane = new JScrollPane(analysisArea);
+        resultTabbedPane.addTab("分析报告", analysisScrollPane);
+
+        mainPanel.add(resultTabbedPane, BorderLayout.CENTER);
+
+        // 底部按钮
         JPanel buttonPanel = new JPanel(new FlowLayout());
-        JButton exportButton = new JButton("导出报告");
         JButton closeButton = new JButton("关闭");
-
-        exportButton.setBackground(new Color(60, 179, 113));
-        exportButton.setForeground(Color.WHITE);
-        exportButton.setFocusPainted(false);
-
         closeButton.setBackground(new Color(220, 20, 60));
         closeButton.setForeground(Color.WHITE);
         closeButton.setFocusPainted(false);
-
-        buttonPanel.add(exportButton);
         buttonPanel.add(closeButton);
 
-        panel.add(buttonPanel, BorderLayout.SOUTH);
+        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
 
-        // 查询按钮事件
-        queryButton.addActionListener(e -> {
-            try {
-                String selectedPeriod = (String) periodComboBox.getSelectedItem();
-                String statsType = (String) statsTypeComboBox.getSelectedItem();
+        // 事件处理
+        generateButton.addActionListener(e -> {
+            String selectedPeriod = (String) periodComboBox.getSelectedItem();
+            String statisticsType = (String) statisticsTypeComboBox.getSelectedItem();
 
-                if (selectedPeriod == null) {
-                    JOptionPane.showMessageDialog(dialog, "请选择评教周期", "提示", JOptionPane.WARNING_MESSAGE);
-                    return;
-                }
-
-                // 获取周期ID（简化处理）
-                String periodId = "P001"; // 这里应该根据选择的周期获取实际ID
-
-                StringBuilder result = new StringBuilder();
-                result.append("=== ").append(statsType).append(" ===\n");
-                result.append("评教周期: ").append(selectedPeriod).append("\n");
-                result.append("统计时间: ").append(java.time.LocalDateTime.now().toString()).append("\n\n");
-
-                switch (statsType) {
-                    case "学生参与统计":
-                        Map<String, Object> studentStats = statisticsService.getStudentEvaluationStatistics(periodId);
-                        result.append("学生总数: ").append(studentStats.getOrDefault("totalStudents", 0)).append("\n");
-                        result.append("参与评教学生数: ").append(studentStats.getOrDefault("participatedStudents", 0)).append("\n");
-                        result.append("参与率: ").append(String.format("%.1f%%", (Double) studentStats.getOrDefault("participationRate", 0.0))).append("\n\n");
-
-                        @SuppressWarnings("unchecked")
-                        Map<String, Integer> distribution = (Map<String, Integer>) studentStats.get("gradeDistribution");
-                        if (distribution != null) {
-                            result.append("评价分布:\n");
-                            for (Map.Entry<String, Integer> entry : distribution.entrySet()) {
-                                result.append("  ").append(entry.getKey()).append(": ").append(entry.getValue()).append("人\n");
-                            }
-                        }
-                        break;
-
-                    case "教师评教统计":
-                        Map<String, Object> teacherStats = statisticsService.getTeacherEvaluationStatistics(periodId);
-                        result.append("参与教师总数: ").append(teacherStats.getOrDefault("totalTeachers", 0)).append("\n");
-                        result.append("总体平均分: ").append(String.format("%.1f", (Double) teacherStats.getOrDefault("overallAvgScore", 0.0))).append("\n\n");
-                        break;
-
-                    case "课程评教统计":
-                        Map<String, Object> courseStats = statisticsService.getCourseEvaluationStatistics(periodId);
-                        result.append("参与课程总数: ").append(courseStats.getOrDefault("totalCourses", 0)).append("\n");
-                        result.append("总体平均分: ").append(String.format("%.1f", (Double) courseStats.getOrDefault("overallAvgScore", 0.0))).append("\n\n");
-                        break;
-
-                    case "班级评教统计":
-                        Map<String, Object> classStats = statisticsService.getClassEvaluationStatistics(periodId);
-                        result.append("总体平均分: ").append(String.format("%.1f", (Double) classStats.getOrDefault("overallAvgScore", 0.0))).append("\n\n");
-                        break;
-                }
-
-                result.append("=== 统计完成 ===");
-                resultArea.setText(result.toString());
-
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(dialog, "生成统计时发生错误: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+            if (selectedPeriod == null) {
+                JOptionPane.showMessageDialog(dialog, "请选择评教周期", "提示", JOptionPane.WARNING_MESSAGE);
+                return;
             }
-        });
 
-        // 导出按钮事件
-        exportButton.addActionListener(e -> {
-            JOptionPane.showMessageDialog(dialog, "导出功能待实现", "提示", JOptionPane.INFORMATION_MESSAGE);
+            String periodId = selectedPeriod.split(" - ")[0];
+            generateAdminStatisticsReport(periodId, statisticsType, statisticsTableModel, analysisArea);
         });
 
         closeButton.addActionListener(e -> dialog.dispose());
 
-        dialog.add(panel);
+        dialog.add(mainPanel);
         dialog.setVisible(true);
     }
-    
+
+    /**
+     * 生成管理员统计报告
+     */
+    private void generateAdminStatisticsReport(String periodId, String statisticsType, DefaultTableModel tableModel, JTextArea analysisArea) {
+        tableModel.setRowCount(0);
+        analysisArea.setText("");
+
+        try {
+            switch (statisticsType) {
+                case "总体统计":
+                    generateAdminOverallStatistics(periodId, tableModel, analysisArea);
+                    break;
+                case "教师排名":
+                    generateAdminTeacherRanking(periodId, tableModel, analysisArea);
+                    break;
+                case "课程排名":
+                    generateAdminCourseRanking(periodId, tableModel, analysisArea);
+                    break;
+                case "班级统计":
+                    generateAdminClassStatistics(periodId, tableModel, analysisArea);
+                    break;
+                case "学院统计":
+                    generateAdminCollegeStatistics(periodId, tableModel, analysisArea);
+                    break;
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "生成统计报告失败: " + e.getMessage(),
+                "错误", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    /**
+     * 生成管理员总体统计
+     */
+    private void generateAdminOverallStatistics(String periodId, DefaultTableModel tableModel, JTextArea analysisArea) {
+        try {
+            // 获取基本统计数据
+            Map<String, Object> teacherStats = statisticsService.getTeacherEvaluationStatistics(periodId);
+            Map<String, Object> courseStats = statisticsService.getCourseEvaluationStatistics(periodId);
+            Map<String, Object> studentStats = statisticsService.getStudentEvaluationStatistics(periodId);
+
+            // 添加统计数据到表格
+            tableModel.addRow(new Object[]{"参与教师总数", teacherStats.getOrDefault("totalTeachers", 0), "100%", "-", "已完成评教的教师数量"});
+            tableModel.addRow(new Object[]{"参与课程总数", courseStats.getOrDefault("totalCourses", 0), "100%", "-", "已完成评教的课程数量"});
+            tableModel.addRow(new Object[]{"参与学生总数", studentStats.getOrDefault("participatedStudents", 0),
+                String.format("%.1f%%", (Double) studentStats.getOrDefault("participationRate", 0.0)), "-", "参与评教的学生数量"});
+
+            double overallAvgScore = (Double) teacherStats.getOrDefault("overallAvgScore", 0.0);
+            tableModel.addRow(new Object[]{"总体平均分", String.format("%.2f", overallAvgScore), "-", getGradeByScore(overallAvgScore), "所有评教的平均分数"});
+
+            // 生成分析报告
+            StringBuilder analysis = new StringBuilder();
+            analysis.append("=== 评教总体统计分析报告 ===\n\n");
+            analysis.append("一、基本情况\n");
+            analysis.append(String.format("本次评教周期共有 %d 名教师、%d 门课程参与评教，",
+                teacherStats.getOrDefault("totalTeachers", 0), courseStats.getOrDefault("totalCourses", 0)));
+            analysis.append(String.format("学生参与率为 %.1f%%。\n\n", (Double) studentStats.getOrDefault("participationRate", 0.0)));
+
+            analysis.append("二、评教结果分析\n");
+            analysis.append(String.format("总体平均分为 %.2f 分，等级为 %s。\n\n", overallAvgScore, getGradeByScore(overallAvgScore)));
+
+            analysis.append("三、建议\n");
+            if (overallAvgScore >= 85) {
+                analysis.append("整体评教结果良好，教学质量较高，建议继续保持并进一步提升。\n");
+            } else if (overallAvgScore >= 75) {
+                analysis.append("整体评教结果一般，建议加强教学质量监控，提升教学水平。\n");
+            } else {
+                analysis.append("整体评教结果偏低，建议重点关注教学质量，采取针对性改进措施。\n");
+            }
+
+            analysisArea.setText(analysis.toString());
+
+        } catch (Exception e) {
+            throw new RuntimeException("生成总体统计失败: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 生成管理员教师排名统计
+     */
+    private void generateAdminTeacherRanking(String periodId, DefaultTableModel tableModel, JTextArea analysisArea) {
+        try {
+            String sql = """
+                SELECT t.teacher_id, t.name, t.title, t.college,
+                       AVG(e.total_score) as avg_score, COUNT(e.evaluation_id) as eval_count
+                FROM teachers t
+                JOIN course_offerings co ON t.teacher_id = co.teacher_id
+                JOIN evaluations e ON co.offering_id = e.offering_id
+                WHERE e.period_id = ?
+                GROUP BY t.teacher_id, t.name, t.title, t.college
+                HAVING COUNT(e.evaluation_id) >= 3
+                ORDER BY avg_score DESC
+                LIMIT 20
+            """;
+
+            try (Connection conn = DatabaseUtil.getConnection();
+                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+                pstmt.setString(1, periodId);
+                ResultSet rs = pstmt.executeQuery();
+
+                int rank = 1;
+                StringBuilder analysis = new StringBuilder();
+                analysis.append("=== 教师评教排名分析 ===\n\n");
+                analysis.append("排名规则：至少3次评教记录，按平均分排序\n\n");
+
+                while (rs.next()) {
+                    String teacherId = rs.getString("teacher_id");
+                    String name = rs.getString("name");
+                    String title = rs.getString("title");
+                    String college = rs.getString("college");
+                    double avgScore = rs.getDouble("avg_score");
+                    int evalCount = rs.getInt("eval_count");
+
+                    tableModel.addRow(new Object[]{
+                        name + "(" + teacherId + ")",
+                        String.format("%.2f", avgScore),
+                        title,
+                        String.valueOf(rank),
+                        college + " | " + evalCount + "次评教"
+                    });
+
+                    if (rank <= 10) {
+                        analysis.append(String.format("第%d名：%s（%s），平均分%.2f，评教%d次\n",
+                            rank, name, title, avgScore, evalCount));
+                    }
+
+                    rank++;
+                }
+
+                analysis.append("\n分析建议：\n");
+                analysis.append("1. 排名前10的教师教学效果突出，可作为教学示范推广经验\n");
+                analysis.append("2. 建议对排名靠后的教师进行教学指导和培训\n");
+                analysis.append("3. 鼓励教师间相互学习，提升整体教学水平\n");
+
+                analysisArea.setText(analysis.toString());
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("生成教师排名统计失败: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 生成管理员课程排名统计
+     */
+    private void generateAdminCourseRanking(String periodId, DefaultTableModel tableModel, JTextArea analysisArea) {
+        try {
+            String sql = """
+                SELECT c.course_id, c.course_name, c.course_type, c.college,
+                       AVG(e.total_score) as avg_score, COUNT(e.evaluation_id) as eval_count
+                FROM courses c
+                JOIN course_offerings co ON c.course_id = co.course_id
+                JOIN evaluations e ON co.offering_id = e.offering_id
+                WHERE e.period_id = ?
+                GROUP BY c.course_id, c.course_name, c.course_type, c.college
+                HAVING COUNT(e.evaluation_id) >= 5
+                ORDER BY avg_score DESC
+                LIMIT 20
+            """;
+
+            try (Connection conn = DatabaseUtil.getConnection();
+                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+                pstmt.setString(1, periodId);
+                ResultSet rs = pstmt.executeQuery();
+
+                int rank = 1;
+                StringBuilder analysis = new StringBuilder();
+                analysis.append("=== 课程评教排名分析 ===\n\n");
+                analysis.append("排名规则：至少5次评教记录，按平均分排序\n\n");
+
+                while (rs.next()) {
+                    String courseId = rs.getString("course_id");
+                    String courseName = rs.getString("course_name");
+                    String courseType = rs.getString("course_type");
+                    String college = rs.getString("college");
+                    double avgScore = rs.getDouble("avg_score");
+                    int evalCount = rs.getInt("eval_count");
+
+                    tableModel.addRow(new Object[]{
+                        courseName + "(" + courseId + ")",
+                        String.format("%.2f", avgScore),
+                        courseType,
+                        String.valueOf(rank),
+                        college + " | " + evalCount + "次评教"
+                    });
+
+                    if (rank <= 10) {
+                        analysis.append(String.format("第%d名：%s（%s），平均分%.2f，评教%d次\n",
+                            rank, courseName, courseType, avgScore, evalCount));
+                    }
+
+                    rank++;
+                }
+
+                analysis.append("\n分析建议：\n");
+                analysis.append("1. 排名前列的课程教学质量优秀，可总结教学经验\n");
+                analysis.append("2. 关注不同课程类型的评教差异，针对性改进\n");
+                analysis.append("3. 建议对评分较低的课程进行教学改革\n");
+
+                analysisArea.setText(analysis.toString());
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("生成课程排名统计失败: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 生成管理员班级统计
+     */
+    private void generateAdminClassStatistics(String periodId, DefaultTableModel tableModel, JTextArea analysisArea) {
+        try {
+            String sql = """
+                SELECT cl.class_id, cl.class_name, cl.grade, cl.major, cl.college,
+                       AVG(e.total_score) as avg_score, COUNT(e.evaluation_id) as eval_count,
+                       COUNT(DISTINCT e.student_id) as student_count
+                FROM classes cl
+                JOIN course_offerings co ON cl.class_id = co.class_id
+                JOIN evaluations e ON co.offering_id = e.offering_id
+                WHERE e.period_id = ?
+                GROUP BY cl.class_id, cl.class_name, cl.grade, cl.major, cl.college
+                ORDER BY avg_score DESC
+            """;
+
+            try (Connection conn = DatabaseUtil.getConnection();
+                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+                pstmt.setString(1, periodId);
+                ResultSet rs = pstmt.executeQuery();
+
+                int rank = 1;
+                StringBuilder analysis = new StringBuilder();
+                analysis.append("=== 班级评教统计分析 ===\n\n");
+
+                while (rs.next()) {
+                    String classId = rs.getString("class_id");
+                    String className = rs.getString("class_name");
+                    String grade = rs.getString("grade");
+                    String major = rs.getString("major");
+                    String college = rs.getString("college");
+                    double avgScore = rs.getDouble("avg_score");
+                    int evalCount = rs.getInt("eval_count");
+                    int studentCount = rs.getInt("student_count");
+
+                    tableModel.addRow(new Object[]{
+                        className + "(" + classId + ")",
+                        String.format("%.2f", avgScore),
+                        String.format("%.1f%%", studentCount > 0 ? evalCount * 100.0 / studentCount : 0),
+                        String.valueOf(rank),
+                        grade + " " + major + " | " + college
+                    });
+
+                    if (rank <= 5) {
+                        analysis.append(String.format("第%d名：%s，平均分%.2f，参与学生%d人\n",
+                            rank, className, avgScore, studentCount));
+                    }
+
+                    rank++;
+                }
+
+                analysis.append("\n分析建议：\n");
+                analysis.append("1. 关注各班级学生参与评教的积极性\n");
+                analysis.append("2. 分析不同年级、专业间的评教差异\n");
+                analysis.append("3. 加强班级学风建设，提高评教质量\n");
+
+                analysisArea.setText(analysis.toString());
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("生成班级统计失败: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 生成管理员学院统计
+     */
+    private void generateAdminCollegeStatistics(String periodId, DefaultTableModel tableModel, JTextArea analysisArea) {
+        try {
+            String sql = """
+                SELECT t.college,
+                       AVG(e.total_score) as avg_score,
+                       COUNT(e.evaluation_id) as eval_count,
+                       COUNT(DISTINCT t.teacher_id) as teacher_count,
+                       COUNT(DISTINCT c.course_id) as course_count
+                FROM teachers t
+                JOIN course_offerings co ON t.teacher_id = co.teacher_id
+                JOIN courses c ON co.course_id = c.course_id
+                JOIN evaluations e ON co.offering_id = e.offering_id
+                WHERE e.period_id = ?
+                GROUP BY t.college
+                ORDER BY avg_score DESC
+            """;
+
+            try (Connection conn = DatabaseUtil.getConnection();
+                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+                pstmt.setString(1, periodId);
+                ResultSet rs = pstmt.executeQuery();
+
+                int rank = 1;
+                StringBuilder analysis = new StringBuilder();
+                analysis.append("=== 学院评教统计分析 ===\n\n");
+
+                while (rs.next()) {
+                    String college = rs.getString("college");
+                    double avgScore = rs.getDouble("avg_score");
+                    int evalCount = rs.getInt("eval_count");
+                    int teacherCount = rs.getInt("teacher_count");
+                    int courseCount = rs.getInt("course_count");
+
+                    tableModel.addRow(new Object[]{
+                        college,
+                        String.format("%.2f", avgScore),
+                        String.format("%.1f", evalCount * 1.0 / teacherCount),
+                        String.valueOf(rank),
+                        String.format("教师%d人，课程%d门", teacherCount, courseCount)
+                    });
+
+                    analysis.append(String.format("第%d名：%s，平均分%.2f，教师%d人，课程%d门\n",
+                        rank, college, avgScore, teacherCount, courseCount));
+
+                    rank++;
+                }
+
+                analysis.append("\n分析建议：\n");
+                analysis.append("1. 各学院应加强教学质量管理，提升整体水平\n");
+                analysis.append("2. 学院间可相互学习优秀教学管理经验\n");
+                analysis.append("3. 建议制定学院教学质量提升计划\n");
+
+                analysisArea.setText(analysis.toString());
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("生成学院统计失败: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 根据分数获取等级
+     */
+    private String getGradeByScore(double score) {
+        if (score >= 90) return "优秀";
+        else if (score >= 80) return "良好";
+        else if (score >= 70) return "中等";
+        else if (score >= 60) return "及格";
+        else return "不及格";
+    }
+
     /**
      * 显示系统统计
      */

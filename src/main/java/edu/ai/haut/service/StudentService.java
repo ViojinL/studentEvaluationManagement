@@ -59,21 +59,20 @@ public class StudentService {
         
         try {
             String sql = """
-                INSERT INTO students (student_id, name, gender, grade, major, class_id, contact, password) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO students (student_id, name, gender, grade, major, class_id, password)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
             """;
-            
+
             try (Connection conn = DatabaseUtil.getConnection();
                  PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                
+
                 pstmt.setString(1, student.getStudentId());
                 pstmt.setString(2, student.getName());
                 pstmt.setString(3, student.getGender());
                 pstmt.setString(4, student.getGrade());
                 pstmt.setString(5, student.getMajor());
                 pstmt.setString(6, student.getClassId());
-                pstmt.setString(7, student.getContact());
-                pstmt.setString(8, student.getPassword());
+                pstmt.setString(7, student.getPassword());
                 
                 int result = pstmt.executeUpdate();
                 
@@ -187,7 +186,6 @@ public class StudentService {
                     student.setGrade(rs.getString("grade"));
                     student.setMajor(rs.getString("major"));
                     student.setClassId(rs.getString("class_id"));
-                    student.setContact(rs.getString("contact"));
                     student.setPassword(rs.getString("password"));
                     return student;
                 }
@@ -219,7 +217,6 @@ public class StudentService {
                     student.setGrade(rs.getString("grade"));
                     student.setMajor(rs.getString("major"));
                     student.setClassId(rs.getString("class_id"));
-                    student.setContact(rs.getString("contact"));
                     student.setPassword(rs.getString("password"));
                     students.add(student);
                 }
@@ -253,7 +250,6 @@ public class StudentService {
                     student.setGrade(rs.getString("grade"));
                     student.setMajor(rs.getString("major"));
                     student.setClassId(rs.getString("class_id"));
-                    student.setContact(rs.getString("contact"));
                     student.setPassword(rs.getString("password"));
                     students.add(student);
                 }
@@ -264,7 +260,29 @@ public class StudentService {
         
         return students;
     }
-    
+
+    /**
+     * 获取班级学生数量
+     */
+    public int getStudentCountByClass(String classId) {
+        try {
+            String sql = "SELECT COUNT(*) FROM students WHERE class_id = ?";
+            try (Connection conn = DatabaseUtil.getConnection();
+                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+                pstmt.setString(1, classId);
+                ResultSet rs = pstmt.executeQuery();
+
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("获取班级学生数量时数据库错误: " + e.getMessage());
+        }
+        return 0;
+    }
+
     /**
      * 更新学生信息
      */
@@ -275,20 +293,19 @@ public class StudentService {
         
         try {
             String sql = """
-                UPDATE students SET name = ?, gender = ?, grade = ?, major = ?, 
-                class_id = ?, contact = ? WHERE student_id = ?
+                UPDATE students SET name = ?, gender = ?, grade = ?, major = ?,
+                class_id = ? WHERE student_id = ?
             """;
-            
+
             try (Connection conn = DatabaseUtil.getConnection();
                  PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                
+
                 pstmt.setString(1, student.getName());
                 pstmt.setString(2, student.getGender());
                 pstmt.setString(3, student.getGrade());
                 pstmt.setString(4, student.getMajor());
                 pstmt.setString(5, student.getClassId());
-                pstmt.setString(6, student.getContact());
-                pstmt.setString(7, student.getStudentId());
+                pstmt.setString(6, student.getStudentId());
                 
                 return pstmt.executeUpdate() > 0;
             }

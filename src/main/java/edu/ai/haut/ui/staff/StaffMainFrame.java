@@ -176,25 +176,19 @@ public class StaffMainFrame extends JFrame {
         // 操作按钮面板
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         buttonPanel.setBackground(new Color(240, 248, 255));
-        
+
         JButton refreshButton = new JButton("刷新");
-        JButton exportButton = new JButton("导出报告");
         JButton logoutButton = new JButton("退出登录");
 
         refreshButton.setBackground(new Color(70, 130, 180));
         refreshButton.setForeground(Color.WHITE);
         refreshButton.setFocusPainted(false);
 
-        exportButton.setBackground(new Color(60, 179, 113));
-        exportButton.setForeground(Color.WHITE);
-        exportButton.setFocusPainted(false);
-
         logoutButton.setBackground(new Color(220, 20, 60));
         logoutButton.setForeground(Color.WHITE);
         logoutButton.setFocusPainted(false);
 
         buttonPanel.add(refreshButton);
-        buttonPanel.add(exportButton);
         buttonPanel.add(logoutButton);
         
         topPanel.add(infoPanel, BorderLayout.WEST);
@@ -223,7 +217,6 @@ public class StaffMainFrame extends JFrame {
         
         // 设置按钮事件
         refreshButton.addActionListener(e -> loadData());
-        exportButton.addActionListener(e -> exportReport());
         logoutButton.addActionListener(e -> logout());
     }
     
@@ -279,20 +272,14 @@ public class StaffMainFrame extends JFrame {
         statsQueryPanel.add(periodComboBox);
         statsQueryPanel.add(new JLabel("统计类型:"));
         statsQueryPanel.add(statisticsTypeComboBox);
-        
+
         JButton statsQueryButton = new JButton("生成统计");
-        JButton chartButton = new JButton("图表分析");
-        
+
         statsQueryButton.setBackground(new Color(70, 130, 180));
         statsQueryButton.setForeground(Color.WHITE);
         statsQueryButton.setFocusPainted(false);
-        
-        chartButton.setBackground(new Color(138, 43, 226));
-        chartButton.setForeground(Color.WHITE);
-        chartButton.setFocusPainted(false);
-        
+
         statsQueryPanel.add(statsQueryButton);
-        statsQueryPanel.add(chartButton);
         
         panel.add(statsQueryPanel, BorderLayout.NORTH);
         
@@ -302,7 +289,6 @@ public class StaffMainFrame extends JFrame {
         
         // 设置按钮事件
         statsQueryButton.addActionListener(e -> loadStatisticsData());
-        chartButton.addActionListener(e -> showChartAnalysis());
         
         return panel;
     }
@@ -576,19 +562,7 @@ public class StaffMainFrame extends JFrame {
             "评教详情", JOptionPane.INFORMATION_MESSAGE);
     }
     
-    /**
-     * 导出报告
-     */
-    private void exportReport() {
-        JOptionPane.showMessageDialog(this, "导出报告功能待实现", "提示", JOptionPane.INFORMATION_MESSAGE);
-    }
-    
-    /**
-     * 显示图表分析
-     */
-    private void showChartAnalysis() {
-        JOptionPane.showMessageDialog(this, "图表分析功能待实现", "提示", JOptionPane.INFORMATION_MESSAGE);
-    }
+
 
     /**
      * 创建课程管理面板
@@ -1080,14 +1054,7 @@ public class StaffMainFrame extends JFrame {
 
         // 按钮事件
         addButton.addActionListener(e -> showAddCourseOfferingDialog(dialog, offeringTableModel));
-        editButton.addActionListener(e -> {
-            int selectedRow = offeringTable.getSelectedRow();
-            if (selectedRow < 0) {
-                JOptionPane.showMessageDialog(dialog, "请选择要编辑的开课", "提示", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-            JOptionPane.showMessageDialog(dialog, "编辑开课功能待完善", "提示", JOptionPane.INFORMATION_MESSAGE);
-        });
+        editButton.addActionListener(e -> showEditCourseOfferingDialog(dialog, offeringTable, offeringTableModel));
         deleteButton.addActionListener(e -> {
             int selectedRow = offeringTable.getSelectedRow();
             if (selectedRow < 0) {
@@ -1294,6 +1261,182 @@ public class StaffMainFrame extends JFrame {
 
         dialog.add(panel);
         dialog.setVisible(true);
+    }
+
+    /**
+     * 显示编辑开课对话框
+     */
+    private void showEditCourseOfferingDialog(JDialog parentDialog, JTable offeringTable, DefaultTableModel tableModel) {
+        int selectedRow = offeringTable.getSelectedRow();
+        if (selectedRow < 0) {
+            JOptionPane.showMessageDialog(parentDialog, "请选择要编辑的开课", "提示", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        String offeringId = (String) tableModel.getValueAt(selectedRow, 0);
+
+        try {
+            CourseOffering offering = courseService.getCourseOfferingById(offeringId);
+            if (offering == null) {
+                JOptionPane.showMessageDialog(parentDialog, "开课信息不存在", "错误", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            JDialog dialog = new JDialog(parentDialog, "编辑开课 - " + offeringId, true);
+            dialog.setSize(450, 400);
+            dialog.setLocationRelativeTo(parentDialog);
+
+            JPanel panel = new JPanel(new GridBagLayout());
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.insets = new Insets(8, 8, 8, 8);
+
+            JTextField offeringIdField = new JTextField(offering.getOfferingId(), 15);
+            offeringIdField.setEditable(false);
+            offeringIdField.setBackground(Color.LIGHT_GRAY);
+
+            JComboBox<String> courseComboBox = new JComboBox<>();
+            JComboBox<String> teacherComboBox = new JComboBox<>();
+            JComboBox<String> classComboBox = new JComboBox<>();
+            JTextField semesterField = new JTextField(offering.getSemester(), 15);
+            JTextField scheduleField = new JTextField(offering.getSchedule(), 15);
+
+            // 加载数据到下拉框
+            try {
+                List<Course> courses = courseService.getAllCourses();
+                for (Course course : courses) {
+                    String item = course.getCourseId() + " - " + course.getCourseName();
+                    courseComboBox.addItem(item);
+                    if (course.getCourseId().equals(offering.getCourseId())) {
+                        courseComboBox.setSelectedItem(item);
+                    }
+                }
+
+                List<Teacher> teachers = teacherService.getAllTeachers();
+                for (Teacher teacher : teachers) {
+                    String item = teacher.getTeacherId() + " - " + teacher.getName();
+                    teacherComboBox.addItem(item);
+                    if (teacher.getTeacherId().equals(offering.getTeacherId())) {
+                        teacherComboBox.setSelectedItem(item);
+                    }
+                }
+
+                List<ClassRoom> classes = courseService.getAllClassRooms();
+                for (ClassRoom classRoom : classes) {
+                    String item = classRoom.getClassId() + " - " + classRoom.getClassName();
+                    classComboBox.addItem(item);
+                    if (classRoom.getClassId().equals(offering.getClassId())) {
+                        classComboBox.setSelectedItem(item);
+                    }
+                }
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(dialog, "加载数据失败: " + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            // 布局组件
+            gbc.gridx = 0; gbc.gridy = 0; gbc.anchor = GridBagConstraints.EAST;
+            panel.add(new JLabel("开课编号:"), gbc);
+            gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
+            panel.add(offeringIdField, gbc);
+
+            gbc.gridx = 0; gbc.gridy = 1; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
+            panel.add(new JLabel("课程:"), gbc);
+            gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
+            panel.add(courseComboBox, gbc);
+
+            gbc.gridx = 0; gbc.gridy = 2; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
+            panel.add(new JLabel("授课教师:"), gbc);
+            gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
+            panel.add(teacherComboBox, gbc);
+
+            gbc.gridx = 0; gbc.gridy = 3; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
+            panel.add(new JLabel("班级:"), gbc);
+            gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
+            panel.add(classComboBox, gbc);
+
+            gbc.gridx = 0; gbc.gridy = 4; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
+            panel.add(new JLabel("学期:"), gbc);
+            gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
+            panel.add(semesterField, gbc);
+
+            gbc.gridx = 0; gbc.gridy = 5; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
+            panel.add(new JLabel("上课时间:"), gbc);
+            gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
+            panel.add(scheduleField, gbc);
+
+            // 按钮面板
+            JPanel buttonPanel = new JPanel(new FlowLayout());
+            JButton saveButton = new JButton("保存");
+            JButton cancelButton = new JButton("取消");
+
+            saveButton.setBackground(new Color(60, 179, 113));
+            saveButton.setForeground(Color.WHITE);
+            saveButton.setFocusPainted(false);
+
+            cancelButton.setBackground(new Color(220, 20, 60));
+            cancelButton.setForeground(Color.WHITE);
+            cancelButton.setFocusPainted(false);
+
+            buttonPanel.add(saveButton);
+            buttonPanel.add(cancelButton);
+
+            gbc.gridx = 0; gbc.gridy = 6;
+            gbc.gridwidth = 2; gbc.fill = GridBagConstraints.HORIZONTAL;
+            panel.add(buttonPanel, gbc);
+
+            // 保存按钮事件
+            saveButton.addActionListener(e -> {
+                try {
+                    String courseSelection = (String) courseComboBox.getSelectedItem();
+                    String teacherSelection = (String) teacherComboBox.getSelectedItem();
+                    String classSelection = (String) classComboBox.getSelectedItem();
+                    String semester = semesterField.getText().trim();
+                    String schedule = scheduleField.getText().trim();
+
+                    if (courseSelection == null || teacherSelection == null || classSelection == null ||
+                        semester.isEmpty() || schedule.isEmpty()) {
+                        JOptionPane.showMessageDialog(dialog, "请填写所有必填字段", "错误", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+
+                    // 解析选择的ID
+                    String courseId = courseSelection.split(" - ")[0];
+                    String teacherId = teacherSelection.split(" - ")[0];
+                    String classId = classSelection.split(" - ")[0];
+
+                    offering.setCourseId(courseId);
+                    offering.setTeacherId(teacherId);
+                    offering.setClassId(classId);
+                    offering.setSemester(semester);
+                    offering.setSchedule(schedule);
+
+                    if (courseService.updateCourseOffering(offering)) {
+                        // 更新表格
+                        tableModel.setValueAt(courseSelection.split(" - ")[1], selectedRow, 1);
+                        tableModel.setValueAt(teacherSelection.split(" - ")[1], selectedRow, 2);
+                        tableModel.setValueAt(classSelection.split(" - ")[1], selectedRow, 3);
+                        tableModel.setValueAt(semester, selectedRow, 4);
+                        tableModel.setValueAt(schedule, selectedRow, 5);
+
+                        JOptionPane.showMessageDialog(dialog, "开课更新成功", "成功", JOptionPane.INFORMATION_MESSAGE);
+                        dialog.dispose();
+                    } else {
+                        JOptionPane.showMessageDialog(dialog, "开课更新失败", "错误", JOptionPane.ERROR_MESSAGE);
+                    }
+
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(dialog, "更新开课时发生错误: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+                }
+            });
+
+            cancelButton.addActionListener(e -> dialog.dispose());
+
+            dialog.add(panel);
+            dialog.setVisible(true);
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(parentDialog, "加载开课信息失败: " + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     // 评教管理相关方法
@@ -1569,22 +1712,16 @@ public class StaffMainFrame extends JFrame {
         }
 
         JButton generateButton = new JButton("生成统计");
-        JButton exportButton = new JButton("导出报告");
 
         generateButton.setBackground(new Color(70, 130, 180));
         generateButton.setForeground(Color.WHITE);
         generateButton.setFocusPainted(false);
-
-        exportButton.setBackground(new Color(60, 179, 113));
-        exportButton.setForeground(Color.WHITE);
-        exportButton.setFocusPainted(false);
 
         controlPanel.add(new JLabel("评教周期:"));
         controlPanel.add(periodComboBox);
         controlPanel.add(new JLabel("统计类型:"));
         controlPanel.add(statisticsTypeComboBox);
         controlPanel.add(generateButton);
-        controlPanel.add(exportButton);
 
         mainPanel.add(controlPanel, BorderLayout.NORTH);
 
@@ -1645,9 +1782,7 @@ public class StaffMainFrame extends JFrame {
             generateStatisticsReport(periodId, statisticsType, statisticsTableModel, analysisArea);
         });
 
-        exportButton.addActionListener(e -> {
-            JOptionPane.showMessageDialog(dialog, "导出功能开发中...", "提示", JOptionPane.INFORMATION_MESSAGE);
-        });
+
 
         closeButton.addActionListener(e -> dialog.dispose());
 

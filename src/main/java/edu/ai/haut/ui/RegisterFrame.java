@@ -27,7 +27,6 @@ public class RegisterFrame extends JDialog {
     private JTextField gradeField;
     private JTextField majorField;
     private JTextField classNameField;
-    private JTextField contactField;
     
     // 教师专用字段
     private JComboBox<String> titleComboBox;
@@ -76,7 +75,6 @@ public class RegisterFrame extends JDialog {
         gradeField = new JTextField(20);
         majorField = new JTextField(20);
         classNameField = new JTextField(20);
-        contactField = new JTextField(20);
         
         // 教师字段
         titleComboBox = new JComboBox<>(new String[]{"教授", "副教授", "讲师", "助教", "实验师"});
@@ -302,20 +300,9 @@ public class RegisterFrame extends JDialog {
         gbc.anchor = GridBagConstraints.WEST;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         dynamicPanel.add(classNameField, gbc);
-        
-        // 联系方式
-        gbc.gridx = 0; gbc.gridy = 3;
-        gbc.anchor = GridBagConstraints.EAST;
-        gbc.fill = GridBagConstraints.NONE;
-        dynamicPanel.add(new JLabel("联系方式:"), gbc);
-        
-        gbc.gridx = 1; gbc.gridy = 3;
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        dynamicPanel.add(contactField, gbc);
-        
+
         // 添加提示信息
-        gbc.gridx = 0; gbc.gridy = 4;
+        gbc.gridx = 0; gbc.gridy = 3;
         gbc.gridwidth = 2;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         JLabel tipLabel = new JLabel("<html><font color='gray'>提示：学号格式如 231210400111，班级格式如 软件工程2301</font></html>");
@@ -347,20 +334,9 @@ public class RegisterFrame extends JDialog {
         gbc.anchor = GridBagConstraints.WEST;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         dynamicPanel.add(collegeField, gbc);
-        
-        // 联系方式
-        gbc.gridx = 0; gbc.gridy = 2;
-        gbc.anchor = GridBagConstraints.EAST;
-        gbc.fill = GridBagConstraints.NONE;
-        dynamicPanel.add(new JLabel("联系方式:"), gbc);
-        
-        gbc.gridx = 1; gbc.gridy = 2;
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        dynamicPanel.add(contactField, gbc);
-        
+
         // 添加提示信息
-        gbc.gridx = 0; gbc.gridy = 3;
+        gbc.gridx = 0; gbc.gridy = 2;
         gbc.gridwidth = 2;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         JLabel tipLabel = new JLabel("<html><font color='gray'>提示：工号格式如 T20240001</font></html>");
@@ -392,20 +368,9 @@ public class RegisterFrame extends JDialog {
         gbc.anchor = GridBagConstraints.WEST;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         dynamicPanel.add(positionField, gbc);
-        
-        // 联系方式
-        gbc.gridx = 0; gbc.gridy = 2;
-        gbc.anchor = GridBagConstraints.EAST;
-        gbc.fill = GridBagConstraints.NONE;
-        dynamicPanel.add(new JLabel("联系方式:"), gbc);
-        
-        gbc.gridx = 1; gbc.gridy = 2;
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        dynamicPanel.add(contactField, gbc);
-        
+
         // 添加提示信息
-        gbc.gridx = 0; gbc.gridy = 3;
+        gbc.gridx = 0; gbc.gridy = 2;
         gbc.gridwidth = 2;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         JLabel tipLabel = new JLabel("<html><font color='gray'>提示：工号格式如 S20240001</font></html>");
@@ -495,7 +460,6 @@ public class RegisterFrame extends JDialog {
         String grade = gradeField.getText().trim();
         String major = majorField.getText().trim();
         String className = classNameField.getText().trim();
-        String contact = contactField.getText().trim();
         String password = new String(passwordField.getPassword());
         
         // 验证学号格式
@@ -527,7 +491,7 @@ public class RegisterFrame extends JDialog {
             }
         }
         
-        Student student = new Student(userId, name, gender, grade, major, classRoom.getClassId(), contact, password);
+        Student student = new Student(userId, name, gender, grade, major, classRoom.getClassId(), password);
         return studentService.registerStudent(student);
     }
     
@@ -540,15 +504,14 @@ public class RegisterFrame extends JDialog {
         String gender = (String) genderComboBox.getSelectedItem();
         String title = (String) titleComboBox.getSelectedItem();
         String college = collegeField.getText().trim();
-        String contact = contactField.getText().trim();
         String password = new String(passwordField.getPassword());
-        
+
         if (!ValidationUtil.isValidTeacherId(userId)) {
             JOptionPane.showMessageDialog(this, "工号格式不正确，应为T开头的9位字符", "提示", JOptionPane.WARNING_MESSAGE);
             return false;
         }
-        
-        Teacher teacher = new Teacher(userId, name, gender, title, college, contact, password);
+
+        Teacher teacher = new Teacher(userId, name, gender, title, college, password);
         return teacherService.registerTeacher(teacher);
     }
     
@@ -561,7 +524,6 @@ public class RegisterFrame extends JDialog {
         String gender = (String) genderComboBox.getSelectedItem();
         String department = (String) departmentComboBox.getSelectedItem();
         String position = positionField.getText().trim();
-        String contact = contactField.getText().trim();
         String password = new String(passwordField.getPassword());
 
         if (!ValidationUtil.isValidStaffId(userId)) {
@@ -569,7 +531,7 @@ public class RegisterFrame extends JDialog {
             return false;
         }
 
-        AcademicAffairsStaff staff = new AcademicAffairsStaff(userId, name, gender, department, position, contact, password);
+        AcademicAffairsStaff staff = new AcademicAffairsStaff(userId, name, gender, department, position, password);
         return staffService.registerStaff(staff);
     }
     

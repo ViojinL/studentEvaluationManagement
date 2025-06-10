@@ -416,7 +416,7 @@ public class TeacherMainFrame extends JFrame {
             message.append("评教统计分析\n");
             message.append("评教周期: ").append(selectedPeriod.getPeriodName()).append("\n\n");
             message.append("总体平均分: ").append(String.format("%.1f", (Double) stats.getOrDefault("overallAvgScore", 0.0))).append("\n");
-            message.append("参与教师数: ").append(stats.getOrDefault("totalTeachers", 0)).append("\n");
+            message.append("参与学生数: ").append(stats.getOrDefault("totalStudents", 0)).append("\n");
             
             JOptionPane.showMessageDialog(this, message.toString(), "统计分析", JOptionPane.INFORMATION_MESSAGE);
             

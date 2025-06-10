@@ -30,20 +30,19 @@ public class AcademicAffairsStaffService {
         
         try {
             String sql = """
-                INSERT INTO academic_affairs_staff (staff_id, name, gender, department, position, contact, password) 
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO academic_affairs_staff (staff_id, name, gender, department, position, password)
+                VALUES (?, ?, ?, ?, ?, ?)
             """;
-            
+
             try (Connection conn = DatabaseUtil.getConnection();
                  PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                
+
                 pstmt.setString(1, staff.getStaffId());
                 pstmt.setString(2, staff.getName());
                 pstmt.setString(3, staff.getGender());
                 pstmt.setString(4, staff.getDepartment());
                 pstmt.setString(5, staff.getPosition());
-                pstmt.setString(6, staff.getContact());
-                pstmt.setString(7, staff.getPassword());
+                pstmt.setString(6, staff.getPassword());
                 
                 return pstmt.executeUpdate() > 0;
             }
@@ -108,7 +107,6 @@ public class AcademicAffairsStaffService {
                     staff.setGender(rs.getString("gender"));
                     staff.setDepartment(rs.getString("department"));
                     staff.setPosition(rs.getString("position"));
-                    staff.setContact(rs.getString("contact"));
                     staff.setPassword(rs.getString("password"));
                     return staff;
                 }
@@ -139,7 +137,6 @@ public class AcademicAffairsStaffService {
                     staff.setGender(rs.getString("gender"));
                     staff.setDepartment(rs.getString("department"));
                     staff.setPosition(rs.getString("position"));
-                    staff.setContact(rs.getString("contact"));
                     staff.setPassword(rs.getString("password"));
 
                     // 设置创建时间
@@ -179,7 +176,6 @@ public class AcademicAffairsStaffService {
                     staff.setGender(rs.getString("gender"));
                     staff.setDepartment(rs.getString("department"));
                     staff.setPosition(rs.getString("position"));
-                    staff.setContact(rs.getString("contact"));
                     staff.setPassword(rs.getString("password"));
                     staffList.add(staff);
                 }
@@ -201,19 +197,18 @@ public class AcademicAffairsStaffService {
         
         try {
             String sql = """
-                UPDATE academic_affairs_staff SET name = ?, gender = ?, department = ?, 
-                position = ?, contact = ? WHERE staff_id = ?
+                UPDATE academic_affairs_staff SET name = ?, gender = ?, department = ?,
+                position = ? WHERE staff_id = ?
             """;
-            
+
             try (Connection conn = DatabaseUtil.getConnection();
                  PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                
+
                 pstmt.setString(1, staff.getName());
                 pstmt.setString(2, staff.getGender());
                 pstmt.setString(3, staff.getDepartment());
                 pstmt.setString(4, staff.getPosition());
-                pstmt.setString(5, staff.getContact());
-                pstmt.setString(6, staff.getStaffId());
+                pstmt.setString(5, staff.getStaffId());
                 
                 return pstmt.executeUpdate() > 0;
             }

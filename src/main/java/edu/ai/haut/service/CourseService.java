@@ -214,32 +214,64 @@ public class CourseService {
         if (!validateOfferingData(offering)) {
             return false;
         }
-        
+
         // 检查开课编号是否已存在
         if (isOfferingIdExists(offering.getOfferingId())) {
             return false;
         }
-        
+
         try {
             String sql = """
-                INSERT INTO course_offerings (offering_id, course_id, teacher_id, class_id, semester, schedule) 
+                INSERT INTO course_offerings (offering_id, course_id, teacher_id, class_id, semester, schedule)
                 VALUES (?, ?, ?, ?, ?, ?)
             """;
-            
+
             try (Connection conn = DatabaseUtil.getConnection();
                  PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                
+
                 pstmt.setString(1, offering.getOfferingId());
                 pstmt.setString(2, offering.getCourseId());
                 pstmt.setString(3, offering.getTeacherId());
                 pstmt.setString(4, offering.getClassId());
                 pstmt.setString(5, offering.getSemester());
                 pstmt.setString(6, offering.getSchedule());
-                
+
                 return pstmt.executeUpdate() > 0;
             }
         } catch (SQLException e) {
             System.err.println("创建开课信息时数据库错误: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 更新开课信息
+     */
+    public boolean updateCourseOffering(CourseOffering offering) {
+        if (!validateOfferingData(offering)) {
+            return false;
+        }
+
+        try {
+            String sql = """
+                UPDATE course_offerings SET course_id = ?, teacher_id = ?, class_id = ?,
+                semester = ?, schedule = ? WHERE offering_id = ?
+            """;
+
+            try (Connection conn = DatabaseUtil.getConnection();
+                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+                pstmt.setString(1, offering.getCourseId());
+                pstmt.setString(2, offering.getTeacherId());
+                pstmt.setString(3, offering.getClassId());
+                pstmt.setString(4, offering.getSemester());
+                pstmt.setString(5, offering.getSchedule());
+                pstmt.setString(6, offering.getOfferingId());
+
+                return pstmt.executeUpdate() > 0;
+            }
+        } catch (SQLException e) {
+            System.err.println("更新开课信息时数据库错误: " + e.getMessage());
             return false;
         }
     }

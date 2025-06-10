@@ -6,6 +6,7 @@ import edu.ai.haut.ui.LoginFrame;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -76,6 +77,10 @@ public class StudentMainFrame extends JFrame {
         courseTable.setRowHeight(30);
         courseTable.getTableHeader().setFont(new Font("微软雅黑", Font.BOLD, 12));
         courseTable.setFont(new Font("微软雅黑", Font.PLAIN, 12));
+
+        // 设置操作列的按钮渲染器和编辑器
+        courseTable.getColumn("操作").setCellRenderer(new ButtonRenderer());
+        courseTable.getColumn("操作").setCellEditor(new ButtonEditor(new JCheckBox()));
         
         // 评教历史表格
         String[] historyColumns = {"评教编号", "课程名称", "授课教师", "评教周期", "总分", "等级", "评教日期"};
@@ -337,12 +342,100 @@ public class StudentMainFrame extends JFrame {
      * 退出登录
      */
     private void logout() {
-        int option = JOptionPane.showConfirmDialog(this, "确定要退出登录吗？", "确认", 
+        int option = JOptionPane.showConfirmDialog(this, "确定要退出登录吗？", "确认",
             JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
-        
+
         if (option == JOptionPane.YES_OPTION) {
             dispose();
             new LoginFrame().setVisible(true);
+        }
+    }
+
+    /**
+     * 按钮渲染器类
+     */
+    class ButtonRenderer extends JButton implements TableCellRenderer {
+        public ButtonRenderer() {
+            setOpaque(true);
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                boolean isSelected, boolean hasFocus, int row, int column) {
+            String status = (String) table.getValueAt(row, 5); // 评教状态列
+
+            if ("已评教".equals(status)) {
+                setText("已完成");
+                setEnabled(false);
+                setBackground(Color.LIGHT_GRAY);
+            } else {
+                setText("评教");
+                setEnabled(true);
+                setBackground(new Color(70, 130, 180));
+                setForeground(Color.WHITE);
+            }
+
+            return this;
+        }
+    }
+
+    /**
+     * 按钮编辑器类
+     */
+    class ButtonEditor extends DefaultCellEditor {
+        protected JButton button;
+        private String label;
+        private boolean isPushed;
+        private int currentRow;
+
+        public ButtonEditor(JCheckBox checkBox) {
+            super(checkBox);
+            button = new JButton();
+            button.setOpaque(true);
+            button.addActionListener(e -> fireEditingStopped());
+        }
+
+        @Override
+        public Component getTableCellEditorComponent(JTable table, Object value,
+                boolean isSelected, int row, int column) {
+            currentRow = row;
+            String status = (String) table.getValueAt(row, 5); // 评教状态列
+
+            if ("已评教".equals(status)) {
+                label = "已完成";
+                button.setText(label);
+                button.setEnabled(false);
+                button.setBackground(Color.LIGHT_GRAY);
+            } else {
+                label = "评教";
+                button.setText(label);
+                button.setEnabled(true);
+                button.setBackground(new Color(70, 130, 180));
+                button.setForeground(Color.WHITE);
+            }
+
+            isPushed = true;
+            return button;
+        }
+
+        @Override
+        public Object getCellEditorValue() {
+            if (isPushed && button.isEnabled()) {
+                String offeringId = (String) courseTableModel.getValueAt(currentRow, 0);
+                String status = (String) courseTableModel.getValueAt(currentRow, 5);
+
+                if ("未评教".equals(status)) {
+                    SwingUtilities.invokeLater(() -> openEvaluationDialog(offeringId));
+                }
+            }
+            isPushed = false;
+            return label;
+        }
+
+        @Override
+        public boolean stopCellEditing() {
+            isPushed = false;
+            return super.stopCellEditing();
         }
     }
 }

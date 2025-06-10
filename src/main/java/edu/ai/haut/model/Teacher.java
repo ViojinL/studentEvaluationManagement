@@ -8,7 +8,6 @@ public class Teacher extends User {
     
     private String title;      // 职称
     private String college;    // 所属学院
-    private String contact;    // 联系方式
     
     /**
      * 默认构造函数
@@ -21,11 +20,10 @@ public class Teacher extends User {
      * 带参数的构造函数
      */
     public Teacher(String teacherId, String name, String gender, String title,
-                   String college, String contact, String password) {
+                   String college, String password) {
         super(teacherId, name, gender, password);
         this.title = title;
         this.college = college;
-        this.contact = contact;
     }
     
     // Getter和Setter方法
@@ -43,14 +41,6 @@ public class Teacher extends User {
     
     public void setCollege(String college) {
         this.college = college;
-    }
-    
-    public String getContact() {
-        return contact;
-    }
-    
-    public void setContact(String contact) {
-        this.contact = contact;
     }
     
 
@@ -78,13 +68,13 @@ public class Teacher extends User {
      * 获取完整的教师信息字符串
      */
     public String getFullInfo() {
-        return String.format("工号: %s, 姓名: %s, 性别: %s, 职称: %s, 学院: %s, 联系方式: %s",
-                           id, name, gender, title, college, contact);
+        return String.format("工号: %s, 姓名: %s, 性别: %s, 职称: %s, 学院: %s",
+                           id, name, gender, title, college);
     }
 
     @Override
     public String toString() {
-        return String.format("Teacher{teacherId='%s', name='%s', gender='%s', title='%s', college='%s', contact='%s'}",
-                           id, name, gender, title, college, contact);
+        return String.format("Teacher{teacherId='%s', name='%s', gender='%s', title='%s', college='%s'}",
+                           id, name, gender, title, college);
     }
 }

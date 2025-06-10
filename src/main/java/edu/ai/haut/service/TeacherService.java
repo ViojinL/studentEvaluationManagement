@@ -30,20 +30,19 @@ public class TeacherService {
         
         try {
             String sql = """
-                INSERT INTO teachers (teacher_id, name, gender, title, college, contact, password) 
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO teachers (teacher_id, name, gender, title, college, password)
+                VALUES (?, ?, ?, ?, ?, ?)
             """;
-            
+
             try (Connection conn = DatabaseUtil.getConnection();
                  PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                
+
                 pstmt.setString(1, teacher.getTeacherId());
                 pstmt.setString(2, teacher.getName());
                 pstmt.setString(3, teacher.getGender());
                 pstmt.setString(4, teacher.getTitle());
                 pstmt.setString(5, teacher.getCollege());
-                pstmt.setString(6, teacher.getContact());
-                pstmt.setString(7, teacher.getPassword());
+                pstmt.setString(6, teacher.getPassword());
                 
                 return pstmt.executeUpdate() > 0;
             }
@@ -108,7 +107,6 @@ public class TeacherService {
                     teacher.setGender(rs.getString("gender"));
                     teacher.setTitle(rs.getString("title"));
                     teacher.setCollege(rs.getString("college"));
-                    teacher.setContact(rs.getString("contact"));
                     teacher.setPassword(rs.getString("password"));
                     return teacher;
                 }
@@ -139,7 +137,6 @@ public class TeacherService {
                     teacher.setGender(rs.getString("gender"));
                     teacher.setTitle(rs.getString("title"));
                     teacher.setCollege(rs.getString("college"));
-                    teacher.setContact(rs.getString("contact"));
                     teacher.setPassword(rs.getString("password"));
                     teachers.add(teacher);
                 }
@@ -172,7 +169,6 @@ public class TeacherService {
                     teacher.setGender(rs.getString("gender"));
                     teacher.setTitle(rs.getString("title"));
                     teacher.setCollege(rs.getString("college"));
-                    teacher.setContact(rs.getString("contact"));
                     teacher.setPassword(rs.getString("password"));
                     teachers.add(teacher);
                 }
@@ -194,19 +190,18 @@ public class TeacherService {
         
         try {
             String sql = """
-                UPDATE teachers SET name = ?, gender = ?, title = ?, college = ?, 
-                contact = ? WHERE teacher_id = ?
+                UPDATE teachers SET name = ?, gender = ?, title = ?, college = ?
+                WHERE teacher_id = ?
             """;
-            
+
             try (Connection conn = DatabaseUtil.getConnection();
                  PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                
+
                 pstmt.setString(1, teacher.getName());
                 pstmt.setString(2, teacher.getGender());
                 pstmt.setString(3, teacher.getTitle());
                 pstmt.setString(4, teacher.getCollege());
-                pstmt.setString(5, teacher.getContact());
-                pstmt.setString(6, teacher.getTeacherId());
+                pstmt.setString(5, teacher.getTeacherId());
                 
                 return pstmt.executeUpdate() > 0;
             }
