@@ -48,12 +48,19 @@ Thumbs.db
 
 # Logs
 logs/
-*.log
 
 # Temporary files
 *.tmp
 *.temp
 
-
-./data/
+# Data and generated files
+data/
 .VSCodeCounter/
+
+# Application specific
+*.properties.local
+*.config.local
+
+# Backup files
+*.bak
+*.backup
