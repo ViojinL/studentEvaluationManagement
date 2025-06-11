@@ -242,6 +242,12 @@ public class TeacherMainFrame extends JFrame {
         setSize(1000, 700);
         setLocationRelativeTo(null);
         setExtendedState(JFrame.MAXIMIZED_BOTH);
+        // 设置窗口图标
+        try {
+            setIconImage(Toolkit.getDefaultToolkit().getImage("icon.png"));
+        } catch (Exception e) {
+            // 忽略图标加载错误
+        }
     }
     
     /**

@@ -449,6 +449,12 @@ public class AdminMainFrame extends JFrame {
         setSize(1200, 800);
         setLocationRelativeTo(null);
         setExtendedState(JFrame.MAXIMIZED_BOTH);
+        // 设置窗口图标
+        try {
+            setIconImage(Toolkit.getDefaultToolkit().getImage("icon.png"));
+        } catch (Exception e) {
+            // 忽略图标加载错误
+        }
     }
     
     /**
@@ -1309,8 +1315,12 @@ public class AdminMainFrame extends JFrame {
         }
 
         try {
-            // 这里需要在CourseService中添加deleteCourse方法
-            JOptionPane.showMessageDialog(this, "删除课程功能需要在CourseService中实现deleteCourse方法", "提示", JOptionPane.INFORMATION_MESSAGE);
+            if (courseService.deleteCourse(courseId)) {
+                JOptionPane.showMessageDialog(this, "课程删除成功", "成功", JOptionPane.INFORMATION_MESSAGE);
+                loadCourseData(); // 刷新课程列表
+            } else {
+                JOptionPane.showMessageDialog(this, "课程删除失败，可能存在相关的开课信息", "错误", JOptionPane.ERROR_MESSAGE);
+            }
 
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "删除课程时发生错误: " + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
@@ -1377,7 +1387,26 @@ public class AdminMainFrame extends JFrame {
         // 按钮事件
         addButton.addActionListener(e -> showAddCourseOfferingDialog(dialog, offeringTableModel));
         editButton.addActionListener(e -> showEditCourseOfferingDialog(dialog, offeringTable, offeringTableModel));
-        deleteButton.addActionListener(e -> JOptionPane.showMessageDialog(dialog, "删除开课功能待实现", "提示", JOptionPane.INFORMATION_MESSAGE));
+        deleteButton.addActionListener(e -> {
+            int selectedRow = offeringTable.getSelectedRow();
+            if (selectedRow < 0) {
+                JOptionPane.showMessageDialog(dialog, "请选择要删除的开课", "提示", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            int option = JOptionPane.showConfirmDialog(dialog, "确定要删除选中的开课吗？", "确认删除",
+                JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+
+            if (option == JOptionPane.YES_OPTION) {
+                String offeringId = (String) offeringTableModel.getValueAt(selectedRow, 0);
+                if (courseService.deleteCourseOffering(offeringId)) {
+                    offeringTableModel.removeRow(selectedRow);
+                    JOptionPane.showMessageDialog(dialog, "开课删除成功", "成功", JOptionPane.INFORMATION_MESSAGE);
+                } else {
+                    JOptionPane.showMessageDialog(dialog, "开课删除失败", "错误", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
         closeButton.addActionListener(e -> dialog.dispose());
 
         dialog.add(panel);
@@ -2315,15 +2344,31 @@ public class AdminMainFrame extends JFrame {
                     return;
                 }
 
-                // 更新表格数据
-                evaluationTableModel.setValueAt(newPeriodName, selectedRow, 1);
-                evaluationTableModel.setValueAt(newSemester, selectedRow, 2);
-                evaluationTableModel.setValueAt(newStartDate, selectedRow, 3);
-                evaluationTableModel.setValueAt(newEndDate, selectedRow, 4);
-                evaluationTableModel.setValueAt(newStatus, selectedRow, 5);
+                // 验证开始日期不能晚于结束日期
+                java.time.LocalDate startDateParsed = java.time.LocalDate.parse(newStartDate);
+                java.time.LocalDate endDateParsed = java.time.LocalDate.parse(newEndDate);
+                if (startDateParsed.isAfter(endDateParsed)) {
+                    JOptionPane.showMessageDialog(dialog, "开始日期不能晚于结束日期", "错误", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
 
-                JOptionPane.showMessageDialog(dialog, "评教周期更新成功", "成功", JOptionPane.INFORMATION_MESSAGE);
-                dialog.dispose();
+                // 创建更新的评教周期对象
+                EvaluationPeriod updatedPeriod = new EvaluationPeriod(periodId, newPeriodName, newSemester, startDateParsed, endDateParsed, newStatus);
+
+                // 调用服务层更新数据库
+                if (evaluationService.updateEvaluationPeriod(updatedPeriod)) {
+                    // 更新表格数据
+                    evaluationTableModel.setValueAt(newPeriodName, selectedRow, 1);
+                    evaluationTableModel.setValueAt(newSemester, selectedRow, 2);
+                    evaluationTableModel.setValueAt(newStartDate, selectedRow, 3);
+                    evaluationTableModel.setValueAt(newEndDate, selectedRow, 4);
+                    evaluationTableModel.setValueAt(newStatus, selectedRow, 5);
+
+                    JOptionPane.showMessageDialog(dialog, "评教周期更新成功", "成功", JOptionPane.INFORMATION_MESSAGE);
+                    dialog.dispose();
+                } else {
+                    JOptionPane.showMessageDialog(dialog, "评教周期更新失败", "错误", JOptionPane.ERROR_MESSAGE);
+                }
 
             } catch (java.time.format.DateTimeParseException ex) {
                 JOptionPane.showMessageDialog(dialog, "日期解析错误：" + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
@@ -2443,9 +2488,13 @@ public class AdminMainFrame extends JFrame {
                 JOptionPane.WARNING_MESSAGE);
 
             if (option == JOptionPane.YES_OPTION) {
-                // 这里需要在EvaluationService中添加删除指标的方法
-                criteriaTableModel.removeRow(selectedRow);
-                JOptionPane.showMessageDialog(dialog, "指标删除成功", "成功", JOptionPane.INFORMATION_MESSAGE);
+                String criteriaId = (String) criteriaTableModel.getValueAt(selectedRow, 0);
+                if (evaluationService.deleteEvaluationCriteria(criteriaId)) {
+                    criteriaTableModel.removeRow(selectedRow);
+                    JOptionPane.showMessageDialog(dialog, "指标删除成功", "成功", JOptionPane.INFORMATION_MESSAGE);
+                } else {
+                    JOptionPane.showMessageDialog(dialog, "指标删除失败", "错误", JOptionPane.ERROR_MESSAGE);
+                }
             }
         });
 

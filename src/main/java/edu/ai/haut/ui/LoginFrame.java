@@ -158,7 +158,7 @@ public class LoginFrame extends JFrame {
         footerPanel.setBackground(new Color(240, 248, 255));
         footerPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
         
-        JLabel footerLabel = new JLabel("© 2024 河南工业大学 - 学生评教管理系统 v2.0", JLabel.CENTER);
+        JLabel footerLabel = new JLabel("© 2025 河南工业大学 - 学生评教管理系统 v1.0", JLabel.CENTER);
         footerLabel.setFont(new Font("微软雅黑", Font.PLAIN, 12));
         footerLabel.setForeground(Color.GRAY);
         footerPanel.add(footerLabel);

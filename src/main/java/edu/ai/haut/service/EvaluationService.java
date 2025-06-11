@@ -467,6 +467,38 @@ public class EvaluationService {
     }
 
     /**
+     * 更新评教周期
+     */
+    public boolean updateEvaluationPeriod(EvaluationPeriod period) {
+        if (!validatePeriodData(period)) {
+            return false;
+        }
+
+        try {
+            String sql = """
+                UPDATE evaluation_periods SET period_name = ?, semester = ?,
+                start_date = ?, end_date = ?, status = ? WHERE period_id = ?
+            """;
+
+            try (Connection conn = DatabaseUtil.getConnection();
+                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+                pstmt.setString(1, period.getPeriodName());
+                pstmt.setString(2, period.getSemester());
+                pstmt.setDate(3, Date.valueOf(period.getStartDate()));
+                pstmt.setDate(4, Date.valueOf(period.getEndDate()));
+                pstmt.setString(5, period.getStatus());
+                pstmt.setString(6, period.getPeriodId());
+
+                return pstmt.executeUpdate() > 0;
+            }
+        } catch (SQLException e) {
+            System.err.println("更新评教周期时数据库错误: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
      * 更新评教指标
      */
     public boolean updateEvaluationCriteria(EvaluationCriteria criteria) {
@@ -495,6 +527,119 @@ public class EvaluationService {
             System.err.println("更新评教指标时数据库错误: " + e.getMessage());
             return false;
         }
+    }
+
+    /**
+     * 删除评教周期
+     */
+    public boolean deleteEvaluationPeriod(String periodId) {
+        try {
+            // 检查是否有相关的评教记录
+            String checkSql = "SELECT COUNT(*) FROM evaluations WHERE period_id = ?";
+            try (Connection conn = DatabaseUtil.getConnection();
+                 PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
+
+                checkStmt.setString(1, periodId);
+                ResultSet rs = checkStmt.executeQuery();
+
+                if (rs.next() && rs.getInt(1) > 0) {
+                    return false; // 有相关评教记录，不能删除
+                }
+            }
+
+            String sql = "DELETE FROM evaluation_periods WHERE period_id = ?";
+            try (Connection conn = DatabaseUtil.getConnection();
+                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+                pstmt.setString(1, periodId);
+                return pstmt.executeUpdate() > 0;
+            }
+        } catch (SQLException e) {
+            System.err.println("删除评教周期时数据库错误: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 根据评教编号获取评教详情
+     */
+    public Evaluation getEvaluationById(String evaluationId) {
+        try {
+            String sql = """
+                SELECT e.*, co.course_id, c.course_name, t.teacher_id, t.name as teacher_name,
+                       cl.class_id, cl.class_name, s.student_id, s.name as student_name,
+                       ep.period_name, ep.semester
+                FROM evaluations e
+                JOIN course_offerings co ON e.offering_id = co.offering_id
+                JOIN courses c ON co.course_id = c.course_id
+                JOIN teachers t ON co.teacher_id = t.teacher_id
+                JOIN classes cl ON co.class_id = cl.class_id
+                JOIN students s ON e.student_id = s.student_id
+                JOIN evaluation_periods ep ON e.period_id = ep.period_id
+                WHERE e.evaluation_id = ?
+            """;
+
+            try (Connection conn = DatabaseUtil.getConnection();
+                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+                pstmt.setString(1, evaluationId);
+                ResultSet rs = pstmt.executeQuery();
+
+                if (rs.next()) {
+                    Evaluation evaluation = new Evaluation();
+                    evaluation.setEvaluationId(rs.getString("evaluation_id"));
+                    evaluation.setStudentId(rs.getString("student_id"));
+                    evaluation.setOfferingId(rs.getString("offering_id"));
+                    evaluation.setPeriodId(rs.getString("period_id"));
+                    evaluation.setCriteriaScores(rs.getString("criteria_scores"));
+                    evaluation.setTotalScore(rs.getDouble("total_score"));
+                    evaluation.setComments(rs.getString("comments"));
+                    evaluation.setEvaluationDate(rs.getTimestamp("evaluation_date"));
+
+                    // 设置学生信息
+                    Student student = new Student();
+                    student.setStudentId(rs.getString("student_id"));
+                    student.setName(rs.getString("student_name"));
+                    evaluation.setStudent(student);
+
+                    // 设置课程开课信息
+                    CourseOffering offering = new CourseOffering();
+                    offering.setOfferingId(rs.getString("offering_id"));
+                    offering.setCourseId(rs.getString("course_id"));
+                    offering.setTeacherId(rs.getString("teacher_id"));
+                    offering.setClassId(rs.getString("class_id"));
+
+                    Course course = new Course();
+                    course.setCourseId(rs.getString("course_id"));
+                    course.setCourseName(rs.getString("course_name"));
+                    offering.setCourse(course);
+
+                    Teacher teacher = new Teacher();
+                    teacher.setTeacherId(rs.getString("teacher_id"));
+                    teacher.setName(rs.getString("teacher_name"));
+                    offering.setTeacher(teacher);
+
+                    ClassRoom classRoom = new ClassRoom();
+                    classRoom.setClassId(rs.getString("class_id"));
+                    classRoom.setClassName(rs.getString("class_name"));
+                    offering.setClassRoom(classRoom);
+
+                    evaluation.setCourseOffering(offering);
+
+                    // 设置评教周期信息
+                    EvaluationPeriod period = new EvaluationPeriod();
+                    period.setPeriodId(rs.getString("period_id"));
+                    period.setPeriodName(rs.getString("period_name"));
+                    period.setSemester(rs.getString("semester"));
+                    evaluation.setPeriod(period);
+
+                    return evaluation;
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("获取评教详情时数据库错误: " + e.getMessage());
+        }
+        return null;
     }
 
     /**

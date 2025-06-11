@@ -205,6 +205,12 @@ public class StudentEvaluationDialog extends JDialog {
         setSize(700, 600);
         setLocationRelativeTo(getParent());
         setResizable(false);
+        // 设置窗口图标
+        try {
+            setIconImage(Toolkit.getDefaultToolkit().getImage("icon.png"));
+        } catch (Exception e) {
+            // 忽略图标加载错误
+        }
     }
     
     /**

@@ -3,6 +3,8 @@ package edu.ai.haut.ui.student;
 import edu.ai.haut.model.*;
 import edu.ai.haut.service.*;
 import edu.ai.haut.ui.LoginFrame;
+import edu.ai.haut.ui.student.StudentMainFrame.ButtonEditor;
+import edu.ai.haut.ui.student.StudentMainFrame.ButtonRenderer;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -225,6 +227,13 @@ public class StudentMainFrame extends JFrame {
         setSize(900, 700);
         setLocationRelativeTo(null);
         setExtendedState(JFrame.MAXIMIZED_BOTH);
+
+// 设置窗口图标
+        try {
+            setIconImage(Toolkit.getDefaultToolkit().getImage("icon.png"));
+        } catch (Exception e) {
+            // 忽略图标加载错误
+        }
     }
     
     /**

@@ -230,7 +230,7 @@ public class DatabaseUtil {
                 """;
                 try (PreparedStatement insertStmt = conn.prepareStatement(insertAdminSQL)) {
                     insertStmt.executeUpdate();
-                    System.out.println("默认管理员账户创建成功: ADMIN001/123456");
+                    System.out.println("默认管理员账户创建成功");
                 }
             }
         }
