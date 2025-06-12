@@ -3,6 +3,7 @@ package edu.ai.haut.ui.staff;
 import edu.ai.haut.model.*;
 import edu.ai.haut.service.*;
 import edu.ai.haut.ui.LoginFrame;
+import edu.ai.haut.ui.common.ManagementUIHelper;
 import edu.ai.haut.util.DatabaseUtil;
 
 import javax.swing.*;
@@ -31,6 +32,7 @@ public class StaffMainFrame extends JFrame {
     private TeacherService teacherService;
     private CourseService courseService;
     private UserService userService;
+    private ManagementUIHelper managementUIHelper;
     
     private JTabbedPane tabbedPane;
     private JTable evaluationTable;
@@ -56,6 +58,7 @@ public class StaffMainFrame extends JFrame {
         this.teacherService = new TeacherService();
         this.courseService = new CourseService();
         this.userService = new UserService();
+        this.managementUIHelper = new ManagementUIHelper();
         
         initializeComponents();
         setupLayout();
@@ -115,7 +118,7 @@ public class StaffMainFrame extends JFrame {
         statisticsTable.setFont(new Font("微软雅黑", Font.PLAIN, 12));
 
         // 课程管理表格
-        String[] courseColumns = {"课程编号", "课程名称", "学分", "课程类型", "开课学院", "开课数量"};
+        String[] courseColumns = {"课程编号", "课程名称", "学分", "课程类型", "开课学院"};
         courseTableModel = new DefaultTableModel(courseColumns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -141,22 +144,13 @@ public class StaffMainFrame extends JFrame {
         evaluationPeriodTable.setFont(new Font("微软雅黑", Font.PLAIN, 12));
 
         // 设置表格样式
-        setupTableStyle(evaluationTable);
-        setupTableStyle(statisticsTable);
-        setupTableStyle(courseTable);
-        setupTableStyle(evaluationPeriodTable);
+        managementUIHelper.setupTableStyle(evaluationTable);
+        managementUIHelper.setupTableStyle(statisticsTable);
+        managementUIHelper.setupTableStyle(courseTable);
+        managementUIHelper.setupTableStyle(evaluationPeriodTable);
     }
     
-    /**
-     * 设置表格样式
-     */
-    private void setupTableStyle(JTable table) {
-        table.setSelectionBackground(new Color(184, 207, 229));
-        table.setSelectionForeground(Color.BLACK);
-        table.setGridColor(new Color(230, 230, 230));
-        table.getTableHeader().setBackground(new Color(240, 248, 255));
-        table.getTableHeader().setForeground(Color.BLACK);
-    }
+
     
     /**
      * 设置布局
@@ -452,7 +446,7 @@ public class StaffMainFrame extends JFrame {
         Object[] avgRow = {
             "总体平均分",
             String.format("%.1f", (Double) stats.getOrDefault("overallAvgScore", 0.0)),
-            getGradeByScore((Double) stats.getOrDefault("overallAvgScore", 0.0)),
+            managementUIHelper.getGradeByScore((Double) stats.getOrDefault("overallAvgScore", 0.0)),
             "所有教师的平均评教分数"
         };
         statisticsTableModel.addRow(avgRow);
@@ -475,7 +469,7 @@ public class StaffMainFrame extends JFrame {
         Object[] avgRow = {
             "总体平均分",
             String.format("%.1f", (Double) stats.getOrDefault("overallAvgScore", 0.0)),
-            getGradeByScore((Double) stats.getOrDefault("overallAvgScore", 0.0)),
+            managementUIHelper.getGradeByScore((Double) stats.getOrDefault("overallAvgScore", 0.0)),
             "所有课程的平均评教分数"
         };
         statisticsTableModel.addRow(avgRow);
@@ -490,7 +484,7 @@ public class StaffMainFrame extends JFrame {
         Object[] avgRow = {
             "总体平均分",
             String.format("%.1f", (Double) stats.getOrDefault("overallAvgScore", 0.0)),
-            getGradeByScore((Double) stats.getOrDefault("overallAvgScore", 0.0)),
+            managementUIHelper.getGradeByScore((Double) stats.getOrDefault("overallAvgScore", 0.0)),
             "所有班级的平均评教分数"
         };
         statisticsTableModel.addRow(avgRow);
@@ -519,16 +513,7 @@ public class StaffMainFrame extends JFrame {
         statisticsTableModel.addRow(participatedRow);
     }
     
-    /**
-     * 根据分数获取等级
-     */
-    private String getGradeByScore(double score) {
-        if (score >= 90) return "优秀";
-        else if (score >= 80) return "良好";
-        else if (score >= 70) return "中等";
-        else if (score >= 60) return "及格";
-        else return "不及格";
-    }
+
     
     /**
      * 获取选中的评教周期
@@ -694,10 +679,10 @@ public class StaffMainFrame extends JFrame {
         gbc.gridx = 0; gbc.gridy = 7;
         panel.add(new JLabel("等级:"), gbc);
         gbc.gridx = 1;
-        String grade = getGradeByScore(evaluation.getTotalScore());
+        String grade = managementUIHelper.getGradeByScore(evaluation.getTotalScore());
         JLabel gradeLabel = new JLabel(grade);
         gradeLabel.setFont(new Font("微软雅黑", Font.BOLD, 12));
-        gradeLabel.setForeground(getGradeColor(grade));
+        gradeLabel.setForeground(managementUIHelper.getGradeColor(grade));
         panel.add(gradeLabel, gbc);
 
         // 评教时间
@@ -705,7 +690,7 @@ public class StaffMainFrame extends JFrame {
         panel.add(new JLabel("评教时间:"), gbc);
         gbc.gridx = 1;
         String evaluationTime = evaluation.getEvaluationDate() != null ?
-            evaluation.getEvaluationDate().toLocalDateTime().format(
+            evaluation.getEvaluationDate().format(
                 java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")) : "未知时间";
         panel.add(new JLabel(evaluationTime), gbc);
 
@@ -732,7 +717,7 @@ public class StaffMainFrame extends JFrame {
         scoresTable.setRowHeight(30);
         scoresTable.getTableHeader().setFont(new Font("微软雅黑", Font.BOLD, 12));
         scoresTable.setFont(new Font("微软雅黑", Font.PLAIN, 12));
-        setupTableStyle(scoresTable);
+        managementUIHelper.setupTableStyle(scoresTable);
 
         // 解析评分数据
         try {
@@ -740,16 +725,7 @@ public class StaffMainFrame extends JFrame {
             String criteriaScores = evaluation.getCriteriaScores();
 
             if (criteriaScores != null && !criteriaScores.isEmpty()) {
-                // 假设评分数据格式为 "指标1:分数1,指标2:分数2,..."
-                String[] scoreEntries = criteriaScores.split(",");
-                Map<String, Integer> scoreMap = new HashMap<>();
-
-                for (String entry : scoreEntries) {
-                    String[] parts = entry.split(":");
-                    if (parts.length == 2) {
-                        scoreMap.put(parts[0], Integer.parseInt(parts[1]));
-                    }
-                }
+                Map<String, Integer> scoreMap = parseEvaluationScores(criteriaScores);
 
                 for (EvaluationCriteria criteria : criteriaList) {
                     Integer score = scoreMap.get(criteria.getCriteriaId());
@@ -758,7 +734,7 @@ public class StaffMainFrame extends JFrame {
                         criteria.getDescription(),
                         criteria.getMaxScore(),
                         score != null ? score : 0,
-                        String.format("%.1f%%", criteria.getWeight() * 100)
+                        String.format("%.1f%%", criteria.getWeight())
                     };
                     tableModel.addRow(row);
                 }
@@ -779,10 +755,10 @@ public class StaffMainFrame extends JFrame {
         summaryPanel.add(totalScoreLabel);
 
         summaryPanel.add(new JLabel("  等级: "));
-        String grade = getGradeByScore(evaluation.getTotalScore());
+        String grade = managementUIHelper.getGradeByScore(evaluation.getTotalScore());
         JLabel gradeLabel = new JLabel(grade);
         gradeLabel.setFont(new Font("微软雅黑", Font.BOLD, 14));
-        gradeLabel.setForeground(getGradeColor(grade));
+        gradeLabel.setForeground(managementUIHelper.getGradeColor(grade));
         summaryPanel.add(gradeLabel);
 
         panel.add(summaryPanel, BorderLayout.SOUTH);
@@ -817,19 +793,7 @@ public class StaffMainFrame extends JFrame {
         return panel;
     }
 
-    /**
-     * 根据等级获取颜色
-     */
-    private Color getGradeColor(String grade) {
-        switch (grade) {
-            case "优秀": return new Color(34, 139, 34);
-            case "良好": return new Color(0, 128, 255);
-            case "中等": return new Color(255, 165, 0);
-            case "及格": return new Color(255, 140, 0);
-            case "不及格": return new Color(220, 20, 60);
-            default: return Color.BLACK;
-        }
-    }
+
 
     /**
      * 创建课程管理面板
@@ -874,9 +838,25 @@ public class StaffMainFrame extends JFrame {
         panel.add(courseScrollPane, BorderLayout.CENTER);
 
         // 设置按钮事件
-        addCourseButton.addActionListener(e -> showAddCourseDialog());
-        editCourseButton.addActionListener(e -> showEditCourseDialog());
-        deleteCourseButton.addActionListener(e -> deleteSelectedCourse());
+        addCourseButton.addActionListener(e -> managementUIHelper.showAddCourseDialog(this, this::loadCourseData));
+        editCourseButton.addActionListener(e -> {
+            int selectedRow = courseTable.getSelectedRow();
+            if (selectedRow < 0) {
+                managementUIHelper.showWarningMessage(this, "请选择要编辑的课程");
+                return;
+            }
+            String courseId = (String) courseTableModel.getValueAt(selectedRow, 0);
+            managementUIHelper.showEditCourseDialog(this, courseId, this::loadCourseData);
+        });
+        deleteCourseButton.addActionListener(e -> {
+            int selectedRow = courseTable.getSelectedRow();
+            if (selectedRow < 0) {
+                managementUIHelper.showWarningMessage(this, "请选择要删除的课程");
+                return;
+            }
+            String courseId = (String) courseTableModel.getValueAt(selectedRow, 0);
+            managementUIHelper.deleteCourse(this, courseId, this::loadCourseData);
+        });
         manageOfferingsButton.addActionListener(e -> showCourseOfferingsDialog());
 
         return panel;
@@ -925,9 +905,17 @@ public class StaffMainFrame extends JFrame {
         panel.add(evaluationScrollPane, BorderLayout.CENTER);
 
         // 设置按钮事件
-        addPeriodButton.addActionListener(e -> showAddEvaluationPeriodDialog());
-        editPeriodButton.addActionListener(e -> showEditEvaluationPeriodDialog());
-        manageCriteriaButton.addActionListener(e -> showEvaluationCriteriaDialog());
+        addPeriodButton.addActionListener(e -> managementUIHelper.showAddEvaluationPeriodDialog(this, this::loadEvaluationPeriodData));
+        editPeriodButton.addActionListener(e -> {
+            int selectedRow = evaluationPeriodTable.getSelectedRow();
+            if (selectedRow < 0) {
+                managementUIHelper.showWarningMessage(this, "请选择要编辑的评教周期");
+                return;
+            }
+            String periodId = (String) evaluationPeriodTableModel.getValueAt(selectedRow, 0);
+            managementUIHelper.showEditEvaluationPeriodDialog(this, periodId, this::loadEvaluationPeriodData);
+        });
+        manageCriteriaButton.addActionListener(e -> managementUIHelper.showEvaluationCriteriaDialog(this));
         evaluationStatsButton.addActionListener(e -> showEvaluationStatistics());
 
         return panel;
@@ -947,8 +935,7 @@ public class StaffMainFrame extends JFrame {
                     course.getCourseName(),
                     course.getCredits(),
                     course.getCourseType(),
-                    course.getCollege(),
-                    0 // 开课数量，需要单独查询
+                    course.getCollege()
                 };
                 courseTableModel.addRow(row);
             }
@@ -984,280 +971,59 @@ public class StaffMainFrame extends JFrame {
         }
     }
 
-    // 课程管理相关方法
-    private void showAddCourseDialog() {
-        JDialog dialog = new JDialog(this, "添加课程", true);
-        dialog.setSize(400, 350);
-        dialog.setLocationRelativeTo(this);
+    /**
+     * 解析评分数据字符串为Map
+     */
+    private Map<String, Integer> parseEvaluationScores(String criteriaScores) {
+        Map<String, Integer> scoreMap = new HashMap<>();
 
-        JPanel panel = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(8, 8, 8, 8);
-
-        JTextField courseIdField = new JTextField(15);
-        JTextField courseNameField = new JTextField(15);
-        JTextField creditsField = new JTextField(15);
-        JComboBox<String> courseTypeComboBox = new JComboBox<>(new String[]{"必修", "选修", "实践"});
-        JTextField collegeField = new JTextField(15);
-
-        gbc.gridx = 0; gbc.gridy = 0; gbc.anchor = GridBagConstraints.EAST;
-        panel.add(new JLabel("课程编号:"), gbc);
-        gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(courseIdField, gbc);
-
-        gbc.gridx = 0; gbc.gridy = 1; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
-        panel.add(new JLabel("课程名称:"), gbc);
-        gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(courseNameField, gbc);
-
-        gbc.gridx = 0; gbc.gridy = 2; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
-        panel.add(new JLabel("学分:"), gbc);
-        gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(creditsField, gbc);
-
-        gbc.gridx = 0; gbc.gridy = 3; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
-        panel.add(new JLabel("课程类型:"), gbc);
-        gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(courseTypeComboBox, gbc);
-
-        gbc.gridx = 0; gbc.gridy = 4; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
-        panel.add(new JLabel("开课学院:"), gbc);
-        gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(collegeField, gbc);
-
-        // 按钮面板
-        JPanel buttonPanel = new JPanel(new FlowLayout());
-        JButton saveButton = new JButton("保存");
-        JButton cancelButton = new JButton("取消");
-
-        saveButton.setBackground(new Color(60, 179, 113));
-        saveButton.setForeground(Color.WHITE);
-        saveButton.setFocusPainted(false);
-
-        cancelButton.setBackground(new Color(220, 20, 60));
-        cancelButton.setForeground(Color.WHITE);
-        cancelButton.setFocusPainted(false);
-
-        buttonPanel.add(saveButton);
-        buttonPanel.add(cancelButton);
-
-        gbc.gridx = 0; gbc.gridy = 5;
-        gbc.gridwidth = 2; gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(buttonPanel, gbc);
-
-        // 保存按钮事件
-        saveButton.addActionListener(e -> {
-            try {
-                String courseId = courseIdField.getText().trim();
-                String courseName = courseNameField.getText().trim();
-                String creditsText = creditsField.getText().trim();
-                String courseType = (String) courseTypeComboBox.getSelectedItem();
-                String college = collegeField.getText().trim();
-
-                if (courseId.isEmpty() || courseName.isEmpty() || creditsText.isEmpty() || college.isEmpty()) {
-                    JOptionPane.showMessageDialog(dialog, "请填写所有字段", "错误", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-
-                double credits;
-                try {
-                    credits = Double.parseDouble(creditsText);
-                    if (credits <= 0) {
-                        JOptionPane.showMessageDialog(dialog, "学分必须大于0", "错误", JOptionPane.ERROR_MESSAGE);
-                        return;
-                    }
-                } catch (NumberFormatException ex) {
-                    JOptionPane.showMessageDialog(dialog, "学分格式不正确", "错误", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-
-                Course course = new Course(courseId, courseName, credits, courseType, college);
-
-                if (courseService.createCourse(course)) {
-                    JOptionPane.showMessageDialog(dialog, "课程添加成功", "成功", JOptionPane.INFORMATION_MESSAGE);
-                    dialog.dispose();
-                    loadCourseData(); // 刷新课程列表
-                } else {
-                    JOptionPane.showMessageDialog(dialog, "课程添加失败，可能课程编号已存在", "错误", JOptionPane.ERROR_MESSAGE);
-                }
-
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(dialog, "添加课程时发生错误: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
-            }
-        });
-
-        cancelButton.addActionListener(e -> dialog.dispose());
-
-        dialog.add(panel);
-        dialog.setVisible(true);
-    }
-
-    private void showEditCourseDialog() {
-        int selectedRow = courseTable.getSelectedRow();
-        if (selectedRow < 0) {
-            JOptionPane.showMessageDialog(this, "请选择要编辑的课程", "提示", JOptionPane.WARNING_MESSAGE);
-            return;
+        if (criteriaScores == null || criteriaScores.trim().isEmpty()) {
+            return scoreMap;
         }
 
-        String courseId = (String) courseTableModel.getValueAt(selectedRow, 0);
-
         try {
-            Course course = courseService.getCourseById(courseId);
-            if (course == null) {
-                JOptionPane.showMessageDialog(this, "课程信息不存在", "错误", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
+            // 检查是否为JSON格式
+            if (criteriaScores.trim().startsWith("{") && criteriaScores.trim().endsWith("}")) {
+                // JSON格式：{"C001":85,"C002":90}
+                String json = criteriaScores.trim();
+                // 移除大括号
+                json = json.substring(1, json.length() - 1);
 
-            JDialog dialog = new JDialog(this, "编辑课程 - " + course.getCourseName(), true);
-            dialog.setSize(400, 350);
-            dialog.setLocationRelativeTo(this);
-
-            JPanel panel = new JPanel(new GridBagLayout());
-            GridBagConstraints gbc = new GridBagConstraints();
-            gbc.insets = new Insets(8, 8, 8, 8);
-
-            JTextField courseIdField = new JTextField(course.getCourseId(), 15);
-            courseIdField.setEditable(false);
-            courseIdField.setBackground(Color.LIGHT_GRAY);
-
-            JTextField courseNameField = new JTextField(course.getCourseName(), 15);
-            JTextField creditsField = new JTextField(String.valueOf(course.getCredits()), 15);
-            JComboBox<String> courseTypeComboBox = new JComboBox<>(new String[]{"必修", "选修", "实践"});
-            courseTypeComboBox.setSelectedItem(course.getCourseType());
-            JTextField collegeField = new JTextField(course.getCollege(), 15);
-
-            gbc.gridx = 0; gbc.gridy = 0; gbc.anchor = GridBagConstraints.EAST;
-            panel.add(new JLabel("课程编号:"), gbc);
-            gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
-            panel.add(courseIdField, gbc);
-
-            gbc.gridx = 0; gbc.gridy = 1; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
-            panel.add(new JLabel("课程名称:"), gbc);
-            gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
-            panel.add(courseNameField, gbc);
-
-            gbc.gridx = 0; gbc.gridy = 2; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
-            panel.add(new JLabel("学分:"), gbc);
-            gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
-            panel.add(creditsField, gbc);
-
-            gbc.gridx = 0; gbc.gridy = 3; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
-            panel.add(new JLabel("课程类型:"), gbc);
-            gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
-            panel.add(courseTypeComboBox, gbc);
-
-            gbc.gridx = 0; gbc.gridy = 4; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
-            panel.add(new JLabel("开课学院:"), gbc);
-            gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
-            panel.add(collegeField, gbc);
-
-            // 按钮面板
-            JPanel buttonPanel = new JPanel(new FlowLayout());
-            JButton saveButton = new JButton("保存");
-            JButton cancelButton = new JButton("取消");
-
-            saveButton.setBackground(new Color(60, 179, 113));
-            saveButton.setForeground(Color.WHITE);
-            saveButton.setFocusPainted(false);
-
-            cancelButton.setBackground(new Color(220, 20, 60));
-            cancelButton.setForeground(Color.WHITE);
-            cancelButton.setFocusPainted(false);
-
-            buttonPanel.add(saveButton);
-            buttonPanel.add(cancelButton);
-
-            gbc.gridx = 0; gbc.gridy = 5;
-            gbc.gridwidth = 2; gbc.fill = GridBagConstraints.HORIZONTAL;
-            panel.add(buttonPanel, gbc);
-
-            // 保存按钮事件
-            saveButton.addActionListener(e -> {
-                try {
-                    String courseName = courseNameField.getText().trim();
-                    String creditsText = creditsField.getText().trim();
-                    String courseType = (String) courseTypeComboBox.getSelectedItem();
-                    String college = collegeField.getText().trim();
-
-                    if (courseName.isEmpty() || creditsText.isEmpty() || college.isEmpty()) {
-                        JOptionPane.showMessageDialog(dialog, "请填写所有字段", "错误", JOptionPane.ERROR_MESSAGE);
-                        return;
-                    }
-
-                    double credits;
-                    try {
-                        credits = Double.parseDouble(creditsText);
-                        if (credits <= 0) {
-                            JOptionPane.showMessageDialog(dialog, "学分必须大于0", "错误", JOptionPane.ERROR_MESSAGE);
-                            return;
+                // 按逗号分割键值对
+                String[] pairs = json.split(",");
+                for (String pair : pairs) {
+                    // 按冒号分割键和值
+                    String[] parts = pair.split(":");
+                    if (parts.length == 2) {
+                        try {
+                            // 移除引号和空格
+                            String key = parts[0].trim().replaceAll("\"", "");
+                            String value = parts[1].trim().replaceAll("\"", "");
+                            scoreMap.put(key, Integer.parseInt(value));
+                        } catch (NumberFormatException e) {
+                            System.err.println("解析分数值时出错: " + parts[1] + " - " + e.getMessage());
                         }
-                    } catch (NumberFormatException ex) {
-                        JOptionPane.showMessageDialog(dialog, "学分格式不正确", "错误", JOptionPane.ERROR_MESSAGE);
-                        return;
                     }
-
-                    course.setCourseName(courseName);
-                    course.setCredits(credits);
-                    course.setCourseType(courseType);
-                    course.setCollege(college);
-
-                    if (courseService.updateCourse(course)) {
-                        // 更新表格中的数据
-                        courseTableModel.setValueAt(courseName, selectedRow, 1);
-                        courseTableModel.setValueAt(credits, selectedRow, 2);
-                        courseTableModel.setValueAt(courseType, selectedRow, 3);
-                        courseTableModel.setValueAt(college, selectedRow, 4);
-
-                        JOptionPane.showMessageDialog(dialog, "课程更新成功", "成功", JOptionPane.INFORMATION_MESSAGE);
-                        dialog.dispose();
-                    } else {
-                        JOptionPane.showMessageDialog(dialog, "课程更新失败", "错误", JOptionPane.ERROR_MESSAGE);
-                    }
-
-                } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(dialog, "更新课程时发生错误: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
                 }
-            });
-
-            cancelButton.addActionListener(e -> dialog.dispose());
-
-            dialog.add(panel);
-            dialog.setVisible(true);
-
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "加载课程信息失败: " + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
-    private void deleteSelectedCourse() {
-        int selectedRow = courseTable.getSelectedRow();
-        if (selectedRow < 0) {
-            JOptionPane.showMessageDialog(this, "请选择要删除的课程", "提示", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        String courseId = (String) courseTableModel.getValueAt(selectedRow, 0);
-        String courseName = (String) courseTableModel.getValueAt(selectedRow, 1);
-
-        int option = JOptionPane.showConfirmDialog(this,
-            "确定要删除课程 \"" + courseName + "\" 吗？\n注意：删除课程可能会影响相关的开课信息。",
-            "确认删除", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
-
-        if (option != JOptionPane.YES_OPTION) {
-            return;
-        }
-
-        try {
-            if (courseService.deleteCourse(courseId)) {
-                courseTableModel.removeRow(selectedRow);
-                JOptionPane.showMessageDialog(this, "课程删除成功", "成功", JOptionPane.INFORMATION_MESSAGE);
             } else {
-                JOptionPane.showMessageDialog(this, "课程删除失败，可能存在相关的开课信息", "错误", JOptionPane.ERROR_MESSAGE);
+                // 简单的键值对格式：C001:85,C002:90
+                String[] pairs = criteriaScores.split(",");
+                for (String pair : pairs) {
+                    String[] parts = pair.split(":");
+                    if (parts.length == 2) {
+                        try {
+                            scoreMap.put(parts[0].trim(), Integer.parseInt(parts[1].trim()));
+                        } catch (NumberFormatException e) {
+                            System.err.println("解析分数值时出错: " + parts[1] + " - " + e.getMessage());
+                        }
+                    }
+                }
             }
-
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "删除课程时发生错误: " + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+            System.err.println("解析评分数据时出错: " + e.getMessage());
         }
+
+        return scoreMap;
     }
 
     private void showCourseOfferingsDialog() {
@@ -1280,7 +1046,7 @@ public class StaffMainFrame extends JFrame {
         offeringTable.setRowHeight(30);
         offeringTable.getTableHeader().setFont(new Font("微软雅黑", Font.BOLD, 12));
         offeringTable.setFont(new Font("微软雅黑", Font.PLAIN, 12));
-        setupTableStyle(offeringTable);
+        managementUIHelper.setupTableStyle(offeringTable);
 
         // 加载开课数据
         loadCourseOfferingsData(offeringTableModel);
@@ -1706,397 +1472,10 @@ public class StaffMainFrame extends JFrame {
         }
     }
 
-    // 评教管理相关方法
-    private void showAddEvaluationPeriodDialog() {
-        JDialog dialog = new JDialog(this, "创建评教周期", true);
-        dialog.setSize(450, 400);
-        dialog.setLocationRelativeTo(this);
 
-        JPanel panel = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(8, 8, 8, 8);
 
-        JTextField periodIdField = new JTextField(15);
-        JTextField periodNameField = new JTextField(15);
-        JTextField semesterField = new JTextField(15);
 
-        // 日期选择组件（简化版）
-        JTextField startDateField = new JTextField("2025-01-01", 15);
-        JTextField endDateField = new JTextField("2025-06-30", 15);
 
-        JComboBox<String> statusComboBox = new JComboBox<>(new String[]{"未开始", "进行中", "已完成", "已关闭"});
-
-        gbc.gridx = 0; gbc.gridy = 0; gbc.anchor = GridBagConstraints.EAST;
-        panel.add(new JLabel("周期编号:"), gbc);
-        gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(periodIdField, gbc);
-
-        gbc.gridx = 0; gbc.gridy = 1; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
-        panel.add(new JLabel("周期名称:"), gbc);
-        gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(periodNameField, gbc);
-
-        gbc.gridx = 0; gbc.gridy = 2; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
-        panel.add(new JLabel("学期:"), gbc);
-        gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(semesterField, gbc);
-
-        gbc.gridx = 0; gbc.gridy = 3; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
-        panel.add(new JLabel("开始日期:"), gbc);
-        gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(startDateField, gbc);
-
-        gbc.gridx = 0; gbc.gridy = 4; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
-        panel.add(new JLabel("结束日期:"), gbc);
-        gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(endDateField, gbc);
-
-        gbc.gridx = 0; gbc.gridy = 5; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
-        panel.add(new JLabel("状态:"), gbc);
-        gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(statusComboBox, gbc);
-
-        // 日期格式提示
-        gbc.gridx = 0; gbc.gridy = 6; gbc.gridwidth = 2; gbc.anchor = GridBagConstraints.CENTER;
-        JLabel dateFormatLabel = new JLabel("日期格式: YYYY-MM-DD");
-        dateFormatLabel.setFont(new Font("微软雅黑", Font.ITALIC, 10));
-        dateFormatLabel.setForeground(Color.GRAY);
-        panel.add(dateFormatLabel, gbc);
-
-        // 按钮面板
-        JPanel buttonPanel = new JPanel(new FlowLayout());
-        JButton saveButton = new JButton("保存");
-        JButton cancelButton = new JButton("取消");
-
-        saveButton.setBackground(new Color(60, 179, 113));
-        saveButton.setForeground(Color.WHITE);
-        saveButton.setFocusPainted(false);
-
-        cancelButton.setBackground(new Color(220, 20, 60));
-        cancelButton.setForeground(Color.WHITE);
-        cancelButton.setFocusPainted(false);
-
-        buttonPanel.add(saveButton);
-        buttonPanel.add(cancelButton);
-
-        gbc.gridx = 0; gbc.gridy = 7;
-        gbc.gridwidth = 2; gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(buttonPanel, gbc);
-
-        // 保存按钮事件
-        saveButton.addActionListener(e -> {
-            try {
-                String periodId = periodIdField.getText().trim();
-                String periodName = periodNameField.getText().trim();
-                String semester = semesterField.getText().trim();
-                String startDateText = startDateField.getText().trim();
-                String endDateText = endDateField.getText().trim();
-                String status = (String) statusComboBox.getSelectedItem();
-
-                if (periodId.isEmpty() || periodName.isEmpty() || semester.isEmpty() ||
-                    startDateText.isEmpty() || endDateText.isEmpty()) {
-                    JOptionPane.showMessageDialog(dialog, "请填写所有字段", "错误", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-
-                // 解析日期
-                java.time.LocalDate startDate;
-                java.time.LocalDate endDate;
-
-                try {
-                    startDate = java.time.LocalDate.parse(startDateText);
-                } catch (java.time.format.DateTimeParseException ex) {
-                    JOptionPane.showMessageDialog(dialog, "开始日期格式不正确：" + startDateText + "\n请使用YYYY-MM-DD格式，例如：2025-01-01", "错误", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-
-                try {
-                    endDate = java.time.LocalDate.parse(endDateText);
-                } catch (java.time.format.DateTimeParseException ex) {
-                    JOptionPane.showMessageDialog(dialog, "结束日期格式不正确：" + endDateText + "\n请使用YYYY-MM-DD格式，例如：2025-06-30\n注意：6月只有30天，请检查日期是否有效", "错误", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-
-                if (startDate.isAfter(endDate)) {
-                    JOptionPane.showMessageDialog(dialog, "开始日期不能晚于结束日期", "错误", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-
-                EvaluationPeriod period = new EvaluationPeriod(periodId, periodName, semester, startDate, endDate, status);
-
-                if (evaluationService.createEvaluationPeriod(period)) {
-                    JOptionPane.showMessageDialog(dialog, "评教周期创建成功", "成功", JOptionPane.INFORMATION_MESSAGE);
-                    dialog.dispose();
-                    loadEvaluationPeriodData(); // 刷新评教周期列表
-                } else {
-                    JOptionPane.showMessageDialog(dialog, "评教周期创建失败，可能周期编号已存在", "错误", JOptionPane.ERROR_MESSAGE);
-                }
-
-            } catch (java.time.format.DateTimeParseException ex) {
-                JOptionPane.showMessageDialog(dialog, "日期解析错误：" + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(dialog, "创建评教周期时发生错误: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
-            }
-        });
-
-        cancelButton.addActionListener(e -> dialog.dispose());
-
-        dialog.add(panel);
-        dialog.setVisible(true);
-    }
-
-     private void showEditEvaluationPeriodDialog() {
-        int selectedRow = evaluationPeriodTable.getSelectedRow();
-        if (selectedRow < 0) {
-            JOptionPane.showMessageDialog(this, "请选择要编辑的评教周期", "提示", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        String periodId = (String) evaluationPeriodTableModel.getValueAt(selectedRow, 0);
-        String periodName = (String) evaluationPeriodTableModel.getValueAt(selectedRow, 1);
-        String semester = (String) evaluationPeriodTableModel.getValueAt(selectedRow, 2);
-        String startDate = (String) evaluationPeriodTableModel.getValueAt(selectedRow, 3);
-        String endDate = (String) evaluationPeriodTableModel.getValueAt(selectedRow, 4);
-        String status = (String) evaluationPeriodTableModel.getValueAt(selectedRow, 5);
-
-        JDialog dialog = new JDialog(this, "编辑评教周期 - " + periodName, true);
-        dialog.setSize(450, 400);
-        dialog.setLocationRelativeTo(this);
-
-        JPanel panel = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(8, 8, 8, 8);
-
-        JTextField periodIdField = new JTextField(periodId, 15);
-        periodIdField.setEditable(false);
-        periodIdField.setBackground(Color.LIGHT_GRAY);
-
-        JTextField periodNameField = new JTextField(periodName, 15);
-        JTextField semesterField = new JTextField(semester, 15);
-        JTextField startDateField = new JTextField(startDate, 15);
-        JTextField endDateField = new JTextField(endDate, 15);
-        JComboBox<String> statusComboBox = new JComboBox<>(new String[]{"未开始", "进行中", "已完成", "已关闭"});
-        statusComboBox.setSelectedItem(status);
-
-        gbc.gridx = 0; gbc.gridy = 0; gbc.anchor = GridBagConstraints.EAST;
-        panel.add(new JLabel("周期编号:"), gbc);
-        gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(periodIdField, gbc);
-
-        gbc.gridx = 0; gbc.gridy = 1; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
-        panel.add(new JLabel("周期名称:"), gbc);
-        gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(periodNameField, gbc);
-
-        gbc.gridx = 0; gbc.gridy = 2; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
-        panel.add(new JLabel("学期:"), gbc);
-        gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(semesterField, gbc);
-
-        gbc.gridx = 0; gbc.gridy = 3; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
-        panel.add(new JLabel("开始日期:"), gbc);
-        gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(startDateField, gbc);
-
-        gbc.gridx = 0; gbc.gridy = 4; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
-        panel.add(new JLabel("结束日期:"), gbc);
-        gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(endDateField, gbc);
-
-        gbc.gridx = 0; gbc.gridy = 5; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
-        panel.add(new JLabel("状态:"), gbc);
-        gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(statusComboBox, gbc);
-
-        // 按钮面板
-        JPanel buttonPanel = new JPanel(new FlowLayout());
-        JButton saveButton = new JButton("保存");
-        JButton cancelButton = new JButton("取消");
-
-        saveButton.setBackground(new Color(60, 179, 113));
-        saveButton.setForeground(Color.WHITE);
-        saveButton.setFocusPainted(false);
-
-        cancelButton.setBackground(new Color(220, 20, 60));
-        cancelButton.setForeground(Color.WHITE);
-        cancelButton.setFocusPainted(false);
-
-        buttonPanel.add(saveButton);
-        buttonPanel.add(cancelButton);
-
-        gbc.gridx = 0; gbc.gridy = 6;
-        gbc.gridwidth = 2; gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(buttonPanel, gbc);
-
-        // 保存按钮事件
-        saveButton.addActionListener(e -> {
-            try {
-                String newPeriodName = periodNameField.getText().trim();
-                String newSemester = semesterField.getText().trim();
-                String newStartDate = startDateField.getText().trim();
-                String newEndDate = endDateField.getText().trim();
-                String newStatus = (String) statusComboBox.getSelectedItem();
-
-                if (newPeriodName.isEmpty() || newSemester.isEmpty() || newStartDate.isEmpty() || newEndDate.isEmpty()) {
-                    JOptionPane.showMessageDialog(dialog, "请填写所有字段", "错误", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-
-                // 验证日期格式
-                try {
-                    java.time.LocalDate.parse(newStartDate);
-                } catch (java.time.format.DateTimeParseException ex) {
-                    JOptionPane.showMessageDialog(dialog, "开始日期格式不正确：" + newStartDate + "\n请使用YYYY-MM-DD格式，例如：2025-01-01", "错误", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-
-                try {
-                    java.time.LocalDate.parse(newEndDate);
-                } catch (java.time.format.DateTimeParseException ex) {
-                    JOptionPane.showMessageDialog(dialog, "结束日期格式不正确：" + newEndDate + "\n请使用YYYY-MM-DD格式，例如：2025-06-30\n注意：请检查日期是否有效（如6月只有30天）", "错误", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-
-                // 验证开始日期不能晚于结束日期
-                java.time.LocalDate startDateParsed = java.time.LocalDate.parse(newStartDate);
-                java.time.LocalDate endDateParsed = java.time.LocalDate.parse(newEndDate);
-                if (startDateParsed.isAfter(endDateParsed)) {
-                    JOptionPane.showMessageDialog(dialog, "开始日期不能晚于结束日期", "错误", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-
-                // 创建更新的评教周期对象
-                EvaluationPeriod updatedPeriod = new EvaluationPeriod(periodId, newPeriodName, newSemester, startDateParsed, endDateParsed, newStatus);
-
-                // 调用服务层更新数据库
-                if (evaluationService.updateEvaluationPeriod(updatedPeriod)) {
-                    // 更新表格数据
-                    evaluationPeriodTableModel.setValueAt(newPeriodName, selectedRow, 1);
-                    evaluationPeriodTableModel.setValueAt(newSemester, selectedRow, 2);
-                    evaluationPeriodTableModel.setValueAt(newStartDate, selectedRow, 3);
-                    evaluationPeriodTableModel.setValueAt(newEndDate, selectedRow, 4);
-                    evaluationPeriodTableModel.setValueAt(newStatus, selectedRow, 5);
-
-                    JOptionPane.showMessageDialog(dialog, "评教周期更新成功", "成功", JOptionPane.INFORMATION_MESSAGE);
-                    dialog.dispose();
-                } else {
-                    JOptionPane.showMessageDialog(dialog, "评教周期更新失败", "错误", JOptionPane.ERROR_MESSAGE);
-                }
-
-            } catch (java.time.format.DateTimeParseException ex) {
-                JOptionPane.showMessageDialog(dialog, "日期解析错误：" + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(dialog, "更新评教周期时发生错误: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
-            }
-        });
-
-        cancelButton.addActionListener(e -> dialog.dispose());
-
-        dialog.add(panel);
-        dialog.setVisible(true);
-    }
-    private void showEvaluationCriteriaDialog() {
-        JDialog dialog = new JDialog(this, "评教指标管理", true);
-        dialog.setSize(600, 500);
-        dialog.setLocationRelativeTo(this);
-
-        JPanel panel = new JPanel(new BorderLayout());
-
-        // 指标列表
-        String[] columns = {"指标编号", "指标名称", "描述", "权重(%)", "最高分"};
-        DefaultTableModel criteriaTableModel = new DefaultTableModel(columns, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
-        };
-
-        JTable criteriaTable = new JTable(criteriaTableModel);
-        criteriaTable.setRowHeight(30);
-        criteriaTable.getTableHeader().setFont(new Font("微软雅黑", Font.BOLD, 12));
-        criteriaTable.setFont(new Font("微软雅黑", Font.PLAIN, 12));
-        setupTableStyle(criteriaTable);
-
-        // 加载现有指标数据
-        loadCriteriaData(criteriaTableModel);
-
-        JScrollPane scrollPane = new JScrollPane(criteriaTable);
-        panel.add(scrollPane, BorderLayout.CENTER);
-
-        // 按钮面板
-        JPanel buttonPanel = new JPanel(new FlowLayout());
-
-        JButton addButton = new JButton("添加指标");
-        JButton editButton = new JButton("编辑指标");
-        JButton deleteButton = new JButton("删除指标");
-        JButton closeButton = new JButton("关闭");
-
-        addButton.setBackground(new Color(60, 179, 113));
-        addButton.setForeground(Color.WHITE);
-        addButton.setFocusPainted(false);
-
-        editButton.setBackground(new Color(255, 165, 0));
-        editButton.setForeground(Color.WHITE);
-        editButton.setFocusPainted(false);
-
-        deleteButton.setBackground(new Color(220, 20, 60));
-        deleteButton.setForeground(Color.WHITE);
-        deleteButton.setFocusPainted(false);
-
-        closeButton.setBackground(new Color(70, 130, 180));
-        closeButton.setForeground(Color.WHITE);
-        closeButton.setFocusPainted(false);
-
-        buttonPanel.add(addButton);
-        buttonPanel.add(editButton);
-        buttonPanel.add(deleteButton);
-        buttonPanel.add(closeButton);
-
-        panel.add(buttonPanel, BorderLayout.SOUTH);
-
-        // 添加指标按钮事件
-        addButton.addActionListener(e -> {
-            showAddCriteriaDialog(dialog, criteriaTableModel);
-        });
-
-        // 编辑指标按钮事件
-        editButton.addActionListener(e -> {
-            int selectedRow = criteriaTable.getSelectedRow();
-            if (selectedRow < 0) {
-                JOptionPane.showMessageDialog(dialog, "请选择要编辑的指标", "提示", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-            String criteriaId = (String) criteriaTableModel.getValueAt(selectedRow, 0);
-            showEditCriteriaDialog(dialog, criteriaTableModel, criteriaId, selectedRow);
-        });
-
-        // 删除指标按钮事件
-        deleteButton.addActionListener(e -> {
-            int selectedRow = criteriaTable.getSelectedRow();
-            if (selectedRow < 0) {
-                JOptionPane.showMessageDialog(dialog, "请选择要删除的指标", "提示", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-
-            int option = JOptionPane.showConfirmDialog(dialog, "确定要删除选中的评教指标吗？", "确认删除",
-                JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
-
-            if (option == JOptionPane.YES_OPTION) {
-                String criteriaId = (String) criteriaTableModel.getValueAt(selectedRow, 0);
-                if (evaluationService.deleteEvaluationCriteria(criteriaId)) {
-                    criteriaTableModel.removeRow(selectedRow);
-                    JOptionPane.showMessageDialog(dialog, "评教指标删除成功", "成功", JOptionPane.INFORMATION_MESSAGE);
-                } else {
-                    JOptionPane.showMessageDialog(dialog, "评教指标删除失败", "错误", JOptionPane.ERROR_MESSAGE);
-                }
-            }
-        });
-
-        closeButton.addActionListener(e -> dialog.dispose());
-
-        dialog.add(panel);
-        dialog.setVisible(true);
-    }
 
     private void showEvaluationStatistics() {
         JDialog dialog = new JDialog(this, "评教统计分析", true);
@@ -2154,7 +1533,7 @@ public class StaffMainFrame extends JFrame {
         statisticsTable.setRowHeight(30);
         statisticsTable.getTableHeader().setFont(new Font("微软雅黑", Font.BOLD, 12));
         statisticsTable.setFont(new Font("微软雅黑", Font.PLAIN, 12));
-        setupTableStyle(statisticsTable);
+        managementUIHelper.setupTableStyle(statisticsTable);
 
         JScrollPane tableScrollPane = new JScrollPane(statisticsTable);
         resultTabbedPane.addTab("数据统计", tableScrollPane);
@@ -2251,7 +1630,7 @@ public class StaffMainFrame extends JFrame {
                 String.format("%.1f%%", (Double) studentStats.getOrDefault("participationRate", 0.0)), "-", "参与评教的学生数量"});
 
             double overallAvgScore = (Double) teacherStats.getOrDefault("overallAvgScore", 0.0);
-            tableModel.addRow(new Object[]{"总体平均分", String.format("%.2f", overallAvgScore), "-", getGradeByScore(overallAvgScore), "所有评教的平均分数"});
+            tableModel.addRow(new Object[]{"总体平均分", String.format("%.2f", overallAvgScore), "-", managementUIHelper.getGradeByScore(overallAvgScore), "所有评教的平均分数"});
 
             // 分数段统计
             int excellentCount = getScoreRangeCount(periodId, 90, 100);
@@ -2278,7 +1657,7 @@ public class StaffMainFrame extends JFrame {
             analysis.append(String.format("学生参与率为 %.1f%%。\n\n", (Double) studentStats.getOrDefault("participationRate", 0.0)));
 
             analysis.append("二、评教结果分析\n");
-            analysis.append(String.format("总体平均分为 %.2f 分，等级为 %s。\n", overallAvgScore, getGradeByScore(overallAvgScore)));
+            analysis.append(String.format("总体平均分为 %.2f 分，等级为 %s。\n", overallAvgScore, managementUIHelper.getGradeByScore(overallAvgScore)));
 
             if (totalEvaluations > 0) {
                 analysis.append(String.format("其中优秀率为 %.1f%%，良好率为 %.1f%%，",
@@ -2590,283 +1969,11 @@ public class StaffMainFrame extends JFrame {
         }
     }
 
-    /**
-     * 加载评教指标数据
-     */
-    private void loadCriteriaData(DefaultTableModel tableModel) {
-        tableModel.setRowCount(0);
 
-        try {
-            List<EvaluationCriteria> criteriaList = evaluationService.getAllEvaluationCriteria();
-            for (EvaluationCriteria criteria : criteriaList) {
-                Object[] row = {
-                    criteria.getCriteriaId(),
-                    criteria.getCriteriaName(),
-                    criteria.getDescription(),
-                    criteria.getWeight(),
-                    criteria.getMaxScore()
-                };
-                tableModel.addRow(row);
-            }
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "加载评教指标数据失败: " + e.getMessage(),
-                "错误", JOptionPane.ERROR_MESSAGE);
-        }
-    }
 
-    /**
-     * 显示添加评教指标对话框
-     */
-    private void showAddCriteriaDialog(JDialog parentDialog, DefaultTableModel tableModel) {
-        JDialog dialog = new JDialog(parentDialog, "添加评教指标", true);
-        dialog.setSize(400, 350);
-        dialog.setLocationRelativeTo(parentDialog);
 
-        JPanel panel = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(8, 8, 8, 8);
 
-        JTextField criteriaIdField = new JTextField(15);
-        JTextField criteriaNameField = new JTextField(15);
-        JTextArea descriptionArea = new JTextArea(3, 15);
-        descriptionArea.setLineWrap(true);
-        descriptionArea.setWrapStyleWord(true);
-        JTextField weightField = new JTextField(15);
-        JTextField maxScoreField = new JTextField("100", 15);
 
-        gbc.gridx = 0; gbc.gridy = 0; gbc.anchor = GridBagConstraints.EAST;
-        panel.add(new JLabel("指标编号:"), gbc);
-        gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(criteriaIdField, gbc);
-
-        gbc.gridx = 0; gbc.gridy = 1; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
-        panel.add(new JLabel("指标名称:"), gbc);
-        gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(criteriaNameField, gbc);
-
-        gbc.gridx = 0; gbc.gridy = 2; gbc.anchor = GridBagConstraints.NORTHEAST; gbc.fill = GridBagConstraints.NONE;
-        panel.add(new JLabel("描述:"), gbc);
-        gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.BOTH;
-        panel.add(new JScrollPane(descriptionArea), gbc);
-
-        gbc.gridx = 0; gbc.gridy = 3; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
-        panel.add(new JLabel("权重(%):"), gbc);
-        gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(weightField, gbc);
-
-        gbc.gridx = 0; gbc.gridy = 4; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
-        panel.add(new JLabel("最高分:"), gbc);
-        gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(maxScoreField, gbc);
-
-        // 按钮面板
-        JPanel buttonPanel = new JPanel(new FlowLayout());
-        JButton saveButton = new JButton("保存");
-        JButton cancelButton = new JButton("取消");
-
-        saveButton.setBackground(new Color(60, 179, 113));
-        saveButton.setForeground(Color.WHITE);
-        saveButton.setFocusPainted(false);
-
-        cancelButton.setBackground(new Color(220, 20, 60));
-        cancelButton.setForeground(Color.WHITE);
-        cancelButton.setFocusPainted(false);
-
-        buttonPanel.add(saveButton);
-        buttonPanel.add(cancelButton);
-
-        gbc.gridx = 0; gbc.gridy = 5;
-        gbc.gridwidth = 2; gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(buttonPanel, gbc);
-
-        // 保存按钮事件
-        saveButton.addActionListener(e -> {
-            try {
-                String criteriaId = criteriaIdField.getText().trim();
-                String criteriaName = criteriaNameField.getText().trim();
-                String description = descriptionArea.getText().trim();
-                String weightText = weightField.getText().trim();
-                String maxScoreText = maxScoreField.getText().trim();
-
-                if (criteriaId.isEmpty() || criteriaName.isEmpty() || description.isEmpty() ||
-                    weightText.isEmpty() || maxScoreText.isEmpty()) {
-                    JOptionPane.showMessageDialog(dialog, "请填写所有字段", "错误", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-
-                double weight = Double.parseDouble(weightText);
-                double maxScore = Double.parseDouble(maxScoreText);
-
-                if (weight <= 0 || weight > 100) {
-                    JOptionPane.showMessageDialog(dialog, "权重必须在0-100之间", "错误", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-
-                if (maxScore <= 0) {
-                    JOptionPane.showMessageDialog(dialog, "最高分必须大于0", "错误", JOptionPane.ERROR_MESSAGE);
-                    return;
-                }
-
-                EvaluationCriteria criteria = new EvaluationCriteria(criteriaId, criteriaName, description, weight, (int)maxScore);
-
-                if (evaluationService.createEvaluationCriteria(criteria)) {
-                    Object[] row = {criteriaId, criteriaName, description, weight, maxScore};
-                    tableModel.addRow(row);
-                    JOptionPane.showMessageDialog(dialog, "评教指标添加成功", "成功", JOptionPane.INFORMATION_MESSAGE);
-                    dialog.dispose();
-                } else {
-                    JOptionPane.showMessageDialog(dialog, "评教指标添加失败", "错误", JOptionPane.ERROR_MESSAGE);
-                }
-
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(dialog, "权重和最高分必须是数字", "错误", JOptionPane.ERROR_MESSAGE);
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(dialog, "添加评教指标时发生错误: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
-            }
-        });
-
-        cancelButton.addActionListener(e -> dialog.dispose());
-
-        dialog.add(panel);
-        dialog.setVisible(true);
-    }
-
-    /**
-     * 显示编辑评教指标对话框
-     */
-    private void showEditCriteriaDialog(JDialog parentDialog, DefaultTableModel tableModel, String criteriaId, int selectedRow) {
-        try {
-            EvaluationCriteria criteria = evaluationService.getEvaluationCriteriaById(criteriaId);
-            if (criteria == null) {
-                JOptionPane.showMessageDialog(parentDialog, "评教指标信息不存在", "错误", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            JDialog dialog = new JDialog(parentDialog, "编辑评教指标 - " + criteria.getCriteriaName(), true);
-            dialog.setSize(400, 350);
-            dialog.setLocationRelativeTo(parentDialog);
-
-            JPanel panel = new JPanel(new GridBagLayout());
-            GridBagConstraints gbc = new GridBagConstraints();
-            gbc.insets = new Insets(8, 8, 8, 8);
-
-            JTextField criteriaIdField = new JTextField(criteria.getCriteriaId(), 15);
-            criteriaIdField.setEditable(false);
-            criteriaIdField.setBackground(Color.LIGHT_GRAY);
-
-            JTextField criteriaNameField = new JTextField(criteria.getCriteriaName(), 15);
-            JTextArea descriptionArea = new JTextArea(criteria.getDescription(), 3, 15);
-            descriptionArea.setLineWrap(true);
-            descriptionArea.setWrapStyleWord(true);
-            JTextField weightField = new JTextField(String.valueOf(criteria.getWeight()), 15);
-            JTextField maxScoreField = new JTextField(String.valueOf(criteria.getMaxScore()), 15);
-
-            gbc.gridx = 0; gbc.gridy = 0; gbc.anchor = GridBagConstraints.EAST;
-            panel.add(new JLabel("指标编号:"), gbc);
-            gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
-            panel.add(criteriaIdField, gbc);
-
-            gbc.gridx = 0; gbc.gridy = 1; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
-            panel.add(new JLabel("指标名称:"), gbc);
-            gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
-            panel.add(criteriaNameField, gbc);
-
-            gbc.gridx = 0; gbc.gridy = 2; gbc.anchor = GridBagConstraints.NORTHEAST; gbc.fill = GridBagConstraints.NONE;
-            panel.add(new JLabel("描述:"), gbc);
-            gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.BOTH;
-            panel.add(new JScrollPane(descriptionArea), gbc);
-
-            gbc.gridx = 0; gbc.gridy = 3; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
-            panel.add(new JLabel("权重(%):"), gbc);
-            gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
-            panel.add(weightField, gbc);
-
-            gbc.gridx = 0; gbc.gridy = 4; gbc.anchor = GridBagConstraints.EAST; gbc.fill = GridBagConstraints.NONE;
-            panel.add(new JLabel("最高分:"), gbc);
-            gbc.gridx = 1; gbc.anchor = GridBagConstraints.WEST; gbc.fill = GridBagConstraints.HORIZONTAL;
-            panel.add(maxScoreField, gbc);
-
-            // 按钮面板
-            JPanel buttonPanel = new JPanel(new FlowLayout());
-            JButton saveButton = new JButton("保存");
-            JButton cancelButton = new JButton("取消");
-
-            saveButton.setBackground(new Color(60, 179, 113));
-            saveButton.setForeground(Color.WHITE);
-            saveButton.setFocusPainted(false);
-
-            cancelButton.setBackground(new Color(220, 20, 60));
-            cancelButton.setForeground(Color.WHITE);
-            cancelButton.setFocusPainted(false);
-
-            buttonPanel.add(saveButton);
-            buttonPanel.add(cancelButton);
-
-            gbc.gridx = 0; gbc.gridy = 5;
-            gbc.gridwidth = 2; gbc.fill = GridBagConstraints.HORIZONTAL;
-            panel.add(buttonPanel, gbc);
-
-            // 保存按钮事件
-            saveButton.addActionListener(e -> {
-                try {
-                    String criteriaName = criteriaNameField.getText().trim();
-                    String description = descriptionArea.getText().trim();
-                    String weightText = weightField.getText().trim();
-                    String maxScoreText = maxScoreField.getText().trim();
-
-                    if (criteriaName.isEmpty() || description.isEmpty() ||
-                        weightText.isEmpty() || maxScoreText.isEmpty()) {
-                        JOptionPane.showMessageDialog(dialog, "请填写所有字段", "错误", JOptionPane.ERROR_MESSAGE);
-                        return;
-                    }
-
-                    double weight = Double.parseDouble(weightText);
-                    double maxScore = Double.parseDouble(maxScoreText);
-
-                    if (weight <= 0 || weight > 100) {
-                        JOptionPane.showMessageDialog(dialog, "权重必须在0-100之间", "错误", JOptionPane.ERROR_MESSAGE);
-                        return;
-                    }
-
-                    if (maxScore <= 0) {
-                        JOptionPane.showMessageDialog(dialog, "最高分必须大于0", "错误", JOptionPane.ERROR_MESSAGE);
-                        return;
-                    }
-
-                    criteria.setCriteriaName(criteriaName);
-                    criteria.setDescription(description);
-                    criteria.setWeight(weight);
-                    criteria.setMaxScore((int)maxScore);
-
-                    if (evaluationService.updateEvaluationCriteria(criteria)) {
-                        // 更新表格中的数据
-                        tableModel.setValueAt(criteriaName, selectedRow, 1);
-                        tableModel.setValueAt(description, selectedRow, 2);
-                        tableModel.setValueAt(weight, selectedRow, 3);
-                        tableModel.setValueAt(maxScore, selectedRow, 4);
-
-                        JOptionPane.showMessageDialog(dialog, "评教指标更新成功", "成功", JOptionPane.INFORMATION_MESSAGE);
-                        dialog.dispose();
-                    } else {
-                        JOptionPane.showMessageDialog(dialog, "评教指标更新失败", "错误", JOptionPane.ERROR_MESSAGE);
-                    }
-
-                } catch (NumberFormatException ex) {
-                    JOptionPane.showMessageDialog(dialog, "权重和最高分必须是数字", "错误", JOptionPane.ERROR_MESSAGE);
-                } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(dialog, "更新评教指标时发生错误: " + ex.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
-                }
-            });
-
-            cancelButton.addActionListener(e -> dialog.dispose());
-
-            dialog.add(panel);
-            dialog.setVisible(true);
-
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(parentDialog, "加载评教指标信息失败: " + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
-        }
-    }
 
     /**
      * 退出登录

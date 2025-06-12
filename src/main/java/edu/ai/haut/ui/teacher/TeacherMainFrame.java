@@ -393,17 +393,51 @@ public class TeacherMainFrame extends JFrame {
     private void showCourseEvaluationDetails(String offeringId) {
         // 切换到评教结果选项卡
         tabbedPane.setSelectedIndex(1);
-        
+
         // 这里可以进一步过滤显示特定课程的评教结果
         JOptionPane.showMessageDialog(this, "已切换到评教结果选项卡查看详情", "提示", JOptionPane.INFORMATION_MESSAGE);
     }
-    
+
     /**
      * 显示评教详情
      */
     private void showEvaluationDetails(String evaluationId) {
-        JOptionPane.showMessageDialog(this, "评教详情功能待实现", "提示", JOptionPane.INFORMATION_MESSAGE);
+        try {
+            // 根据评教ID获取详细信息
+            Evaluation evaluation = evaluationService.getEvaluationById(evaluationId);
+            if (evaluation == null) {
+                JOptionPane.showMessageDialog(this, "未找到评教记录", "错误", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            // 构建详情信息
+            StringBuilder details = new StringBuilder();
+            details.append("评教详情\n");
+            details.append("评教编号: ").append(evaluation.getEvaluationId()).append("\n");
+            details.append("课程名称: ").append(
+                evaluation.getCourseOffering() != null && evaluation.getCourseOffering().getCourse() != null ?
+                evaluation.getCourseOffering().getCourse().getCourseName() : "未知课程"
+            ).append("\n");
+            details.append("班级: ").append(
+                evaluation.getCourseOffering() != null && evaluation.getCourseOffering().getClassRoom() != null ?
+                evaluation.getCourseOffering().getClassRoom().getClassName() : "未知班级"
+            ).append("\n");
+            details.append("总分: ").append(String.format("%.1f", evaluation.getTotalScore())).append("\n");
+            details.append("等级: ").append(evaluation.getGrade()).append("\n");
+            details.append("评教时间: ").append(evaluation.getEvaluationDate().toLocalDate().toString()).append("\n");
+
+            if (evaluation.getComments() != null && !evaluation.getComments().trim().isEmpty()) {
+                details.append("评价意见: ").append(evaluation.getComments()).append("\n");
+            }
+
+            JOptionPane.showMessageDialog(this, details.toString(), "评教详情", JOptionPane.INFORMATION_MESSAGE);
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "获取评教详情失败: " + e.getMessage(),
+                "错误", JOptionPane.ERROR_MESSAGE);
+        }
     }
+    
     
     /**
      * 显示统计分析

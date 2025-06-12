@@ -3,6 +3,7 @@ package edu.ai.haut.ui.admin;
 import edu.ai.haut.model.*;
 import edu.ai.haut.service.*;
 import edu.ai.haut.ui.LoginFrame;
+import edu.ai.haut.ui.common.ManagementUIHelper;
 import edu.ai.haut.util.DatabaseUtil;
 
 import javax.swing.*;
@@ -32,6 +33,7 @@ public class AdminMainFrame extends JFrame {
     private EvaluationService evaluationService;
     private StatisticsService statisticsService;
     private UserService userService;
+    private ManagementUIHelper managementUIHelper;
     
     private JTabbedPane tabbedPane;
     private JTable userTable;
@@ -58,6 +60,7 @@ public class AdminMainFrame extends JFrame {
         this.evaluationService = new EvaluationService();
         this.statisticsService = new StatisticsService();
         this.userService = new UserService();
+        this.managementUIHelper = new ManagementUIHelper();
         
         initializeComponents();
         setupLayout();
@@ -100,7 +103,7 @@ public class AdminMainFrame extends JFrame {
         userTable.setFont(new Font("微软雅黑", Font.PLAIN, 12));
         
         // 课程管理表格
-        String[] courseColumns = {"课程编号", "课程名称", "学分", "课程类型", "开课学院", "开课数量"};
+        String[] courseColumns = {"课程编号", "课程名称", "学分", "课程类型", "开课学院"};
         courseTableModel = new DefaultTableModel(courseColumns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -139,22 +142,13 @@ public class AdminMainFrame extends JFrame {
         evaluationTable.setFont(new Font("微软雅黑", Font.PLAIN, 12));
         
         // 设置表格样式
-        setupTableStyle(userTable);
-        setupTableStyle(courseTable);
-        setupTableStyle(classTable);
-        setupTableStyle(evaluationTable);
+        managementUIHelper.setupTableStyle(userTable);
+        managementUIHelper.setupTableStyle(courseTable);
+        managementUIHelper.setupTableStyle(classTable);
+        managementUIHelper.setupTableStyle(evaluationTable);
     }
     
-    /**
-     * 设置表格样式
-     */
-    private void setupTableStyle(JTable table) {
-        table.setSelectionBackground(new Color(184, 207, 229));
-        table.setSelectionForeground(Color.BLACK);
-        table.setGridColor(new Color(230, 230, 230));
-        table.getTableHeader().setBackground(new Color(240, 248, 255));
-        table.getTableHeader().setForeground(Color.BLACK);
-    }
+
     
     /**
      * 设置布局
@@ -322,9 +316,25 @@ public class AdminMainFrame extends JFrame {
         panel.add(courseScrollPane, BorderLayout.CENTER);
         
         // 设置按钮事件
-        addCourseButton.addActionListener(e -> showAddCourseDialog());
-        editCourseButton.addActionListener(e -> showEditCourseDialog());
-        deleteCourseButton.addActionListener(e -> deleteSelectedCourse());
+        addCourseButton.addActionListener(e -> managementUIHelper.showAddCourseDialog(this, this::loadCourseData));
+        editCourseButton.addActionListener(e -> {
+            int selectedRow = courseTable.getSelectedRow();
+            if (selectedRow < 0) {
+                managementUIHelper.showWarningMessage(this, "请选择要编辑的课程");
+                return;
+            }
+            String courseId = (String) courseTableModel.getValueAt(selectedRow, 0);
+            managementUIHelper.showEditCourseDialog(this, courseId, this::loadCourseData);
+        });
+        deleteCourseButton.addActionListener(e -> {
+            int selectedRow = courseTable.getSelectedRow();
+            if (selectedRow < 0) {
+                managementUIHelper.showWarningMessage(this, "请选择要删除的课程");
+                return;
+            }
+            String courseId = (String) courseTableModel.getValueAt(selectedRow, 0);
+            managementUIHelper.deleteCourse(this, courseId, this::loadCourseData);
+        });
         manageOfferingsButton.addActionListener(e -> showCourseOfferingsDialog());
         
         return panel;
@@ -424,9 +434,17 @@ public class AdminMainFrame extends JFrame {
         panel.add(evaluationScrollPane, BorderLayout.CENTER);
         
         // 设置按钮事件
-        addPeriodButton.addActionListener(e -> showAddEvaluationPeriodDialog());
-        editPeriodButton.addActionListener(e -> showEditEvaluationPeriodDialog());
-        manageCriteriaButton.addActionListener(e -> showEvaluationCriteriaDialog());
+        addPeriodButton.addActionListener(e -> managementUIHelper.showAddEvaluationPeriodDialog(this, this::loadEvaluationData));
+        editPeriodButton.addActionListener(e -> {
+            int selectedRow = evaluationTable.getSelectedRow();
+            if (selectedRow < 0) {
+                managementUIHelper.showWarningMessage(this, "请选择要编辑的评教周期");
+                return;
+            }
+            String periodId = (String) evaluationTableModel.getValueAt(selectedRow, 0);
+            managementUIHelper.showEditEvaluationPeriodDialog(this, periodId, this::loadEvaluationData);
+        });
+        manageCriteriaButton.addActionListener(e -> managementUIHelper.showEvaluationCriteriaDialog(this));
         evaluationStatsButton.addActionListener(e -> showEvaluationStatistics());
         
         return panel;
@@ -592,13 +610,12 @@ public class AdminMainFrame extends JFrame {
                     course.getCourseName(),
                     course.getCredits(),
                     course.getCourseType(),
-                    course.getCollege(),
-                    0 // 开课数量，需要单独查询
+                    course.getCollege()
                 };
                 courseTableModel.addRow(row);
             }
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "加载课程数据失败: " + e.getMessage(), 
+            JOptionPane.showMessageDialog(this, "加载课程数据失败: " + e.getMessage(),
                 "错误", JOptionPane.ERROR_MESSAGE);
         }
     }
@@ -1873,7 +1890,7 @@ public class AdminMainFrame extends JFrame {
         };
         JTable studentTable = new JTable(studentTableModel);
         studentTable.setRowHeight(25);
-        setupTableStyle(studentTable);
+        managementUIHelper.setupTableStyle(studentTable);
 
         // 加载班级学生数据
         try {
@@ -2488,7 +2505,6 @@ public class AdminMainFrame extends JFrame {
                 JOptionPane.WARNING_MESSAGE);
 
             if (option == JOptionPane.YES_OPTION) {
-                String criteriaId = (String) criteriaTableModel.getValueAt(selectedRow, 0);
                 if (evaluationService.deleteEvaluationCriteria(criteriaId)) {
                     criteriaTableModel.removeRow(selectedRow);
                     JOptionPane.showMessageDialog(dialog, "指标删除成功", "成功", JOptionPane.INFORMATION_MESSAGE);
@@ -2686,7 +2702,7 @@ public class AdminMainFrame extends JFrame {
         statisticsTable.setRowHeight(30);
         statisticsTable.getTableHeader().setFont(new Font("微软雅黑", Font.BOLD, 12));
         statisticsTable.setFont(new Font("微软雅黑", Font.PLAIN, 12));
-        setupTableStyle(statisticsTable);
+        managementUIHelper.setupTableStyle(statisticsTable);
 
         JScrollPane tableScrollPane = new JScrollPane(statisticsTable);
         resultTabbedPane.addTab("数据统计", tableScrollPane);
@@ -3100,9 +3116,6 @@ public class AdminMainFrame extends JFrame {
                 "错误", JOptionPane.ERROR_MESSAGE);
         }
     }
-    
-
-    
     /**
      * 退出登录
      */

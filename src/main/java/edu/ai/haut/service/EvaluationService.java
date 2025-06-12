@@ -594,7 +594,7 @@ public class EvaluationService {
                     evaluation.setCriteriaScores(rs.getString("criteria_scores"));
                     evaluation.setTotalScore(rs.getDouble("total_score"));
                     evaluation.setComments(rs.getString("comments"));
-                    evaluation.setEvaluationDate(rs.getTimestamp("evaluation_date"));
+                    evaluation.setEvaluationDate(rs.getTimestamp("evaluation_date").toLocalDateTime());
 
                     // 设置学生信息
                     Student student = new Student();

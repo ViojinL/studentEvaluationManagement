@@ -155,16 +155,60 @@ public class Evaluation {
     private void parseScores() {
         scoreMap.clear();
         if (criteriaScores != null && !criteriaScores.trim().isEmpty()) {
-            // 简单的键值对格式：criteriaId1:score1,criteriaId2:score2
-            String[] pairs = criteriaScores.split(",");
-            for (String pair : pairs) {
-                String[] parts = pair.split(":");
-                if (parts.length == 2) {
-                    try {
-                        scoreMap.put(parts[0].trim(), Integer.parseInt(parts[1].trim()));
-                    } catch (NumberFormatException e) {
-                        // 忽略格式错误的数据
-                    }
+            try {
+                // 检查是否为JSON格式
+                if (criteriaScores.trim().startsWith("{") && criteriaScores.trim().endsWith("}")) {
+                    // JSON格式：{"C001":85,"C002":90}
+                    parseJsonScores();
+                } else {
+                    // 简单的键值对格式：C001:85,C002:90
+                    parseSimpleScores();
+                }
+            } catch (Exception e) {
+                System.err.println("解析评分数据时出错: " + e.getMessage());
+                // 如果解析失败，保持scoreMap为空
+            }
+        }
+    }
+
+    /**
+     * 解析JSON格式的分数
+     */
+    private void parseJsonScores() {
+        String json = criteriaScores.trim();
+        // 移除大括号
+        json = json.substring(1, json.length() - 1);
+
+        // 按逗号分割键值对
+        String[] pairs = json.split(",");
+        for (String pair : pairs) {
+            // 按冒号分割键和值
+            String[] parts = pair.split(":");
+            if (parts.length == 2) {
+                try {
+                    // 移除引号和空格
+                    String key = parts[0].trim().replaceAll("\"", "");
+                    String value = parts[1].trim().replaceAll("\"", "");
+                    scoreMap.put(key, Integer.parseInt(value));
+                } catch (NumberFormatException e) {
+                    System.err.println("解析分数值时出错: " + parts[1] + " - " + e.getMessage());
+                }
+            }
+        }
+    }
+
+    /**
+     * 解析简单格式的分数
+     */
+    private void parseSimpleScores() {
+        String[] pairs = criteriaScores.split(",");
+        for (String pair : pairs) {
+            String[] parts = pair.split(":");
+            if (parts.length == 2) {
+                try {
+                    scoreMap.put(parts[0].trim(), Integer.parseInt(parts[1].trim()));
+                } catch (NumberFormatException e) {
+                    System.err.println("解析分数值时出错: " + parts[1] + " - " + e.getMessage());
                 }
             }
         }
