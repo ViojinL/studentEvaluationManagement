@@ -152,29 +152,14 @@ public class UserService {
      * 检查用户ID是否已存在
      */
     public boolean isUserIdExists(String userId, String userType) {
-        try {
-            String tableName = getTableNameByUserType(userType);
-            String columnName = getIdColumnNameByUserType(userType);
-            
-            if (tableName == null || columnName == null) {
-                return false;
-            }
-            
-            String sql = String.format("SELECT COUNT(*) FROM %s WHERE %s = ?", tableName, columnName);
-            try (Connection conn = DatabaseUtil.getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                
-                pstmt.setString(1, userId);
-                ResultSet rs = pstmt.executeQuery();
-                
-                if (rs.next()) {
-                    return rs.getInt(1) > 0;
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("检查用户ID时数据库错误: " + e.getMessage());
+        String tableName = getTableNameByUserType(userType);
+        String columnName = getIdColumnNameByUserType(userType);
+
+        if (tableName == null || columnName == null) {
+            return false;
         }
-        return false;
+
+        return DatabaseUtil.recordExists(tableName, columnName, userId);
     }
     
     /**

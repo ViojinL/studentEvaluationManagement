@@ -80,68 +80,7 @@ public class StatisticsService {
         return statistics;
     }
     
-    /**
-     * 按班级统计评教完成情况
-     */
-    public Map<String, Object> getClassEvaluationStatistics(String periodId) {
-        Map<String, Object> statistics = new HashMap<>();
-        
-        try (Connection conn = DatabaseUtil.getConnection()) {
-            String sql = """
-                SELECT 
-                    cl.class_id,
-                    cl.class_name,
-                    cl.grade,
-                    cl.major,
-                    cl.student_count,
-                    COUNT(DISTINCT e.student_id) as evaluated_count,
-                    AVG(e.total_score) as avg_score,
-                    CASE 
-                        WHEN cl.student_count > 0 THEN 
-                            ROUND(COUNT(DISTINCT e.student_id) * 100.0 / cl.student_count, 2)
-                        ELSE 0 
-                    END as completion_rate
-                FROM classes cl
-                LEFT JOIN students s ON cl.class_id = s.class_id
-                LEFT JOIN evaluations e ON s.student_id = e.student_id AND e.period_id = ?
-                GROUP BY cl.class_id, cl.class_name, cl.grade, cl.major, cl.student_count
-                ORDER BY completion_rate DESC, avg_score DESC
-            """;
-            
-            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                pstmt.setString(1, periodId);
-                ResultSet rs = pstmt.executeQuery();
-                
-                Map<String, Map<String, Object>> classStats = new HashMap<>();
-                double totalAvgScore = 0;
-                int classCount = 0;
-                
-                while (rs.next()) {
-                    Map<String, Object> classData = new HashMap<>();
-                    classData.put("className", rs.getString("class_name"));
-                    classData.put("grade", rs.getString("grade"));
-                    classData.put("major", rs.getString("major"));
-                    classData.put("studentCount", rs.getInt("student_count"));
-                    classData.put("evaluatedCount", rs.getInt("evaluated_count"));
-                    classData.put("avgScore", rs.getDouble("avg_score"));
-                    classData.put("completionRate", rs.getDouble("completion_rate"));
-                    
-                    classStats.put(rs.getString("class_id"), classData);
-                    
-                    totalAvgScore += rs.getDouble("avg_score");
-                    classCount++;
-                }
-                
-                statistics.put("classStatistics", classStats);
-                statistics.put("overallAvgScore", classCount > 0 ? totalAvgScore / classCount : 0);
-            }
-            
-        } catch (SQLException e) {
-            System.err.println("获取班级评教统计时数据库错误: " + e.getMessage());
-        }
-        
-        return statistics;
-    }
+
     
     /**
      * 按教师统计评教结果

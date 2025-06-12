@@ -3,6 +3,7 @@ package edu.ai.haut.ui.teacher;
 import edu.ai.haut.model.*;
 import edu.ai.haut.service.*;
 import edu.ai.haut.ui.LoginFrame;
+import edu.ai.haut.ui.common.TableUtil;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -10,7 +11,6 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 教师主界面
@@ -23,7 +23,7 @@ public class TeacherMainFrame extends JFrame {
     
     private CourseService courseService;
     private EvaluationService evaluationService;
-    private StatisticsService statisticsService;
+
     private UserService userService;
     
     private JTabbedPane tabbedPane;
@@ -42,7 +42,7 @@ public class TeacherMainFrame extends JFrame {
         
         this.courseService = new CourseService();
         this.evaluationService = new EvaluationService();
-        this.statisticsService = new StatisticsService();
+
         this.userService = new UserService();
         
         initializeComponents();
@@ -81,10 +81,7 @@ public class TeacherMainFrame extends JFrame {
             }
         };
         courseTable = new JTable(courseTableModel);
-        courseTable.setRowHeight(30);
-        courseTable.getTableHeader().setFont(new Font("微软雅黑", Font.BOLD, 12));
-        courseTable.setFont(new Font("微软雅黑", Font.PLAIN, 12));
-        
+
         // 评教结果表格
         String[] evaluationColumns = {"评教编号", "课程名称", "班级", "学生", "总分", "等级", "评教日期"};
         evaluationTableModel = new DefaultTableModel(evaluationColumns, 0) {
@@ -94,10 +91,7 @@ public class TeacherMainFrame extends JFrame {
             }
         };
         evaluationTable = new JTable(evaluationTableModel);
-        evaluationTable.setRowHeight(30);
-        evaluationTable.getTableHeader().setFont(new Font("微软雅黑", Font.BOLD, 12));
-        evaluationTable.setFont(new Font("微软雅黑", Font.PLAIN, 12));
-        
+
         // 设置表格样式
         setupTableStyle(courseTable);
         setupTableStyle(evaluationTable);
@@ -107,11 +101,7 @@ public class TeacherMainFrame extends JFrame {
      * 设置表格样式
      */
     private void setupTableStyle(JTable table) {
-        table.setSelectionBackground(new Color(184, 207, 229));
-        table.setSelectionForeground(Color.BLACK);
-        table.setGridColor(new Color(230, 230, 230));
-        table.getTableHeader().setBackground(new Color(240, 248, 255));
-        table.getTableHeader().setForeground(Color.BLACK);
+        TableUtil.styleTable(table);
     }
     
     /**
@@ -135,23 +125,17 @@ public class TeacherMainFrame extends JFrame {
         buttonPanel.setBackground(new Color(240, 248, 255));
         
         JButton refreshButton = new JButton("刷新");
-        JButton statisticsButton = new JButton("统计分析");
         JButton logoutButton = new JButton("退出登录");
 
         refreshButton.setBackground(new Color(70, 130, 180));
         refreshButton.setForeground(Color.WHITE);
         refreshButton.setFocusPainted(false);
 
-        statisticsButton.setBackground(new Color(60, 179, 113));
-        statisticsButton.setForeground(Color.WHITE);
-        statisticsButton.setFocusPainted(false);
-
         logoutButton.setBackground(new Color(220, 20, 60));
         logoutButton.setForeground(Color.WHITE);
         logoutButton.setFocusPainted(false);
 
         buttonPanel.add(refreshButton);
-        buttonPanel.add(statisticsButton);
         buttonPanel.add(logoutButton);
         
         topPanel.add(infoPanel, BorderLayout.WEST);
@@ -195,8 +179,7 @@ public class TeacherMainFrame extends JFrame {
         
         // 设置按钮事件
         refreshButton.addActionListener(e -> loadData());
-        queryButton.addActionListener(e -> loadEvaluationData());
-        statisticsButton.addActionListener(e -> showStatistics());
+        queryButton.addActionListener(e -> queryByPeriod());
         logoutButton.addActionListener(e -> logout());
     }
     
@@ -258,6 +241,21 @@ public class TeacherMainFrame extends JFrame {
         loadCourseData();
         loadEvaluationData();
     }
+
+    /**
+     * 根据选择的评教周期查询数据
+     */
+    private void queryByPeriod() {
+        EvaluationPeriod selectedPeriod = getSelectedPeriod();
+        if (selectedPeriod == null) {
+            JOptionPane.showMessageDialog(this, "请选择评教周期", "提示", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        // 重新加载课程数据和评教数据
+        loadCourseDataByPeriod(selectedPeriod);
+        loadEvaluationData();
+    }
     
     /**
      * 加载评教周期
@@ -287,30 +285,39 @@ public class TeacherMainFrame extends JFrame {
      * 加载课程数据
      */
     private void loadCourseData() {
+        EvaluationPeriod currentPeriod = evaluationService.getCurrentActivePeriod();
+        if (currentPeriod != null) {
+            loadCourseDataByPeriod(currentPeriod);
+        }
+    }
+
+    /**
+     * 根据指定评教周期加载课程数据
+     */
+    private void loadCourseDataByPeriod(EvaluationPeriod period) {
         courseTableModel.setRowCount(0);
-        
+
         try {
             List<CourseOffering> offerings = courseService.getCourseOfferingsByTeacher(currentTeacher.getTeacherId());
-            
+
             for (CourseOffering offering : offerings) {
-                // 计算评教统计信息
-                EvaluationPeriod currentPeriod = evaluationService.getCurrentActivePeriod();
+                // 计算指定周期的评教统计信息
                 int evaluationCount = 0;
                 double averageScore = 0.0;
-                
-                if (currentPeriod != null) {
-                    List<Evaluation> evaluations = evaluationService.getTeacherEvaluationResults(
-                        currentTeacher.getTeacherId(), currentPeriod.getPeriodId());
-                    
-                    evaluationCount = evaluations.size();
-                    if (evaluationCount > 0) {
-                        double totalScore = evaluations.stream()
-                            .mapToDouble(Evaluation::getTotalScore)
-                            .sum();
-                        averageScore = totalScore / evaluationCount;
-                    }
+
+                List<Evaluation> evaluations = evaluationService.getTeacherEvaluationResults(
+                    currentTeacher.getTeacherId(), period.getPeriodId()).stream()
+                    .filter(e -> offering.getOfferingId().equals(e.getOfferingId()))
+                    .toList();
+
+                evaluationCount = evaluations.size();
+                if (evaluationCount > 0) {
+                    double totalScore = evaluations.stream()
+                        .mapToDouble(Evaluation::getTotalScore)
+                        .sum();
+                    averageScore = totalScore / evaluationCount;
                 }
-                
+
                 Object[] row = {
                     offering.getOfferingId(),
                     offering.getCourse() != null ? offering.getCourse().getCourseName() : "未知课程",
@@ -323,7 +330,7 @@ public class TeacherMainFrame extends JFrame {
                 courseTableModel.addRow(row);
             }
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "加载课程数据失败: " + e.getMessage(), 
+            JOptionPane.showMessageDialog(this, "加载课程数据失败: " + e.getMessage(),
                 "错误", JOptionPane.ERROR_MESSAGE);
         }
     }
@@ -439,32 +446,7 @@ public class TeacherMainFrame extends JFrame {
     }
     
     
-    /**
-     * 显示统计分析
-     */
-    private void showStatistics() {
-        try {
-            EvaluationPeriod selectedPeriod = getSelectedPeriod();
-            if (selectedPeriod == null) {
-                JOptionPane.showMessageDialog(this, "请选择评教周期", "提示", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-            
-            Map<String, Object> stats = statisticsService.getTeacherEvaluationStatistics(selectedPeriod.getPeriodId());
-            
-            StringBuilder message = new StringBuilder();
-            message.append("评教统计分析\n");
-            message.append("评教周期: ").append(selectedPeriod.getPeriodName()).append("\n\n");
-            message.append("总体平均分: ").append(String.format("%.1f", (Double) stats.getOrDefault("overallAvgScore", 0.0))).append("\n");
-            message.append("参与学生数: ").append(stats.getOrDefault("totalStudents", 0)).append("\n");
-            
-            JOptionPane.showMessageDialog(this, message.toString(), "统计分析", JOptionPane.INFORMATION_MESSAGE);
-            
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "获取统计数据失败: " + e.getMessage(), 
-                "错误", JOptionPane.ERROR_MESSAGE);
-        }
-    }
+
     
 
     

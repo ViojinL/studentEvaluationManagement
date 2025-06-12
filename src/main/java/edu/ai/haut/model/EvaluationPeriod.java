@@ -1,7 +1,6 @@
 package edu.ai.haut.model;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 /**
  * 评教周期实体类
@@ -15,13 +14,11 @@ public class EvaluationPeriod {
     private LocalDate startDate;   // 开始日期
     private LocalDate endDate;     // 结束日期
     private String status;         // 状态（未开始、进行中、已完成、已关闭）
-    private LocalDateTime createdAt; // 创建时间
     
     /**
      * 默认构造函数
      */
     public EvaluationPeriod() {
-        this.createdAt = LocalDateTime.now();
         this.status = "未开始";
     }
     
@@ -36,7 +33,6 @@ public class EvaluationPeriod {
         this.startDate = startDate;
         this.endDate = endDate;
         this.status = status;
-        this.createdAt = LocalDateTime.now();
     }
     
     // Getter和Setter方法
@@ -86,14 +82,6 @@ public class EvaluationPeriod {
     
     public void setStatus(String status) {
         this.status = status;
-    }
-    
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-    
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
     }
     
     /**

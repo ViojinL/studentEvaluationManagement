@@ -477,18 +477,30 @@ public class RegisterFrame extends JDialog {
         // 检查或创建班级
         ClassRoom classRoom = classService.getClassByName(className);
         if (classRoom == null) {
-            // 自动创建班级
-            classRoom = new ClassRoom();
-            classRoom.setClassId(generateClassId(className));
-            classRoom.setClassName(className);
-            classRoom.setGrade(grade);
-            classRoom.setMajor(major);
-            classRoom.setCollege("信息科学与工程学院"); // 默认学院
-            
-            if (!classService.createClass(classRoom)) {
-                JOptionPane.showMessageDialog(this, "创建班级失败", "错误", JOptionPane.ERROR_MESSAGE);
-                return false;
+            // 如果按班级名称找不到，尝试按生成的班级ID查找
+            String generatedClassId = generateClassId(className);
+            classRoom = classService.getClassById(generatedClassId);
+
+            if (classRoom == null) {
+                // 班级确实不存在，创建新班级
+                classRoom = new ClassRoom();
+                classRoom.setClassId(generatedClassId);
+                classRoom.setClassName(className);
+                classRoom.setGrade(grade);
+                classRoom.setMajor(major);
+                classRoom.setCollege("信息科学与工程学院"); // 默认学院
+
+                System.out.println("RegisterFrame: 创建新班级 " + generatedClassId + " - " + className);
+
+                if (!classService.createClass(classRoom)) {
+                    JOptionPane.showMessageDialog(this, "创建班级失败", "错误", JOptionPane.ERROR_MESSAGE);
+                    return false;
+                }
+            } else {
+                System.out.println("RegisterFrame: 找到已存在的班级 " + classRoom.getClassId() + " - " + classRoom.getClassName());
             }
+        } else {
+            System.out.println("RegisterFrame: 通过班级名称找到班级 " + classRoom.getClassId() + " - " + classRoom.getClassName());
         }
         
         Student student = new Student(userId, name, gender, grade, major, classRoom.getClassId(), password);
@@ -536,17 +548,34 @@ public class RegisterFrame extends JDialog {
     }
     
     /**
-     * 生成班级ID
+     * 生成班级ID（使用英文缩写格式）
      */
     private String generateClassId(String className) {
-        // 从班级名称中提取年份和序号
-        // 例如：软件工程2301 -> 202301
+        // 从班级名称中提取专业、年级和序号
+        // 例如：软件工程2301 -> SE2301
         String yearAndClass = className.replaceAll("[^\\d]", "");
         if (yearAndClass.length() >= 4) {
-            String year = "20" + yearAndClass.substring(0, 2);
+            String grade = yearAndClass.substring(0, 2);
             String classNum = yearAndClass.substring(2);
-            return year + classNum;
+
+            // 根据班级名称确定专业前缀
+            String majorPrefix = "CS"; // 默认前缀
+            if (className.contains("软件工程")) {
+                majorPrefix = "SE";
+            } else if (className.contains("计算机")) {
+                majorPrefix = "CS";
+            } else if (className.contains("数据科学")) {
+                majorPrefix = "DS";
+            } else if (className.contains("人工智能")) {
+                majorPrefix = "AI";
+            } else if (className.contains("网络工程")) {
+                majorPrefix = "NE";
+            } else if (className.contains("信息安全")) {
+                majorPrefix = "IS";
+            }
+
+            return majorPrefix + grade + classNum;
         }
-        return "202301"; // 默认值
+        return "CS2301"; // 默认值
     }
 }

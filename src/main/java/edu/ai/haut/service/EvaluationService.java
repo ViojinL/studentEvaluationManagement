@@ -14,7 +14,7 @@ import java.util.Map;
  * 评教服务类
  * 处理评教相关的业务逻辑
  */
-public class EvaluationService {
+public class EvaluationService extends BaseService {
     
     /**
      * 创建评教指标

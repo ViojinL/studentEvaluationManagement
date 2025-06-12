@@ -34,30 +34,30 @@ public class ManagementUIHelper {
         JDialog dialog = new JDialog(parent, "添加课程", true);
         dialog.setSize(400, 350);
         dialog.setLocationRelativeTo(parent);
-        
+
         JPanel panel = createCourseFormPanel(null);
-        
+
         JButton saveButton = new JButton("保存");
         JButton cancelButton = new JButton("取消");
-        
+
         styleButton(saveButton, new Color(60, 179, 113));
         styleButton(cancelButton, new Color(220, 20, 60));
-        
+
         JPanel buttonPanel = new JPanel(new FlowLayout());
         buttonPanel.add(saveButton);
         buttonPanel.add(cancelButton);
-        
+
         dialog.setLayout(new BorderLayout());
         dialog.add(panel, BorderLayout.CENTER);
         dialog.add(buttonPanel, BorderLayout.SOUTH);
-        
+
         // 获取表单组件
         JTextField courseIdField = (JTextField) findComponentByName(panel, "courseIdField");
         JTextField courseNameField = (JTextField) findComponentByName(panel, "courseNameField");
         JTextField creditsField = (JTextField) findComponentByName(panel, "creditsField");
         JComboBox<String> courseTypeComboBox = (JComboBox<String>) findComponentByName(panel, "courseTypeComboBox");
         JTextField collegeField = (JTextField) findComponentByName(panel, "collegeField");
-        
+
         saveButton.addActionListener(e -> {
             try {
                 String courseId = courseIdField.getText().trim();
@@ -218,13 +218,17 @@ public class ManagementUIHelper {
                     refreshCallback.run();
                 }
             } else {
-                JOptionPane.showMessageDialog(parent, "课程删除失败", "错误", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(parent,
+                    "课程删除失败！\n\n该课程存在相关的开课信息，请先删除所有相关开课后再删除课程。",
+                    "删除失败", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
     
     // ==================== 私有辅助方法 ====================
-    
+
+
+
     /**
      * 创建课程表单面板
      */
@@ -592,9 +596,7 @@ public class ManagementUIHelper {
         };
 
         JTable criteriaTable = new JTable(tableModel);
-        criteriaTable.setRowHeight(30);
-        criteriaTable.getTableHeader().setFont(new Font("微软雅黑", Font.BOLD, 12));
-        criteriaTable.setFont(new Font("微软雅黑", Font.PLAIN, 12));
+        TableUtil.styleTable(criteriaTable);
 
         JScrollPane scrollPane = new JScrollPane(criteriaTable);
         mainPanel.add(scrollPane, BorderLayout.CENTER);
@@ -914,21 +916,8 @@ public class ManagementUIHelper {
      * 设置表格样式
      */
     public void setupTableStyle(JTable table) {
+        TableUtil.styleTable(table);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        table.setRowHeight(25);
-        table.getTableHeader().setReorderingAllowed(false);
-        table.setFont(new Font("微软雅黑", Font.PLAIN, 12));
-        table.getTableHeader().setFont(new Font("微软雅黑", Font.BOLD, 12));
-
-        // 设置表格颜色
-        table.setBackground(Color.WHITE);
-        table.setSelectionBackground(new Color(184, 207, 229));
-        table.setSelectionForeground(Color.BLACK);
-        table.setGridColor(new Color(200, 200, 200));
-
-        // 设置表头样式
-        table.getTableHeader().setBackground(new Color(240, 240, 240));
-        table.getTableHeader().setForeground(Color.BLACK);
     }
 
     /**

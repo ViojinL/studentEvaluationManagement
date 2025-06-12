@@ -12,7 +12,7 @@ import java.util.List;
  * 教务人员服务类
  * 处理教务人员相关的业务逻辑
  */
-public class AcademicAffairsStaffService {
+public class AcademicAffairsStaffService extends BaseService {
     
     /**
      * 注册教务人员
@@ -22,70 +22,30 @@ public class AcademicAffairsStaffService {
         if (!validateStaffData(staff)) {
             return false;
         }
-        
+
         // 检查工号是否已存在
-        if (isStaffIdExists(staff.getStaffId())) {
+        if (isIdExists("academic_affairs_staff", "staff_id", staff.getStaffId())) {
             return false;
         }
-        
-        try {
-            String sql = """
-                INSERT INTO academic_affairs_staff (staff_id, name, gender, department, position, password)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """;
 
-            try (Connection conn = DatabaseUtil.getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        String[] columns = {"staff_id", "name", "gender", "department", "position", "password"};
+        Object[] values = {staff.getStaffId(), staff.getName(), staff.getGender(),
+                          staff.getDepartment(), staff.getPosition(), staff.getPassword()};
 
-                pstmt.setString(1, staff.getStaffId());
-                pstmt.setString(2, staff.getName());
-                pstmt.setString(3, staff.getGender());
-                pstmt.setString(4, staff.getDepartment());
-                pstmt.setString(5, staff.getPosition());
-                pstmt.setString(6, staff.getPassword());
-                
-                return pstmt.executeUpdate() > 0;
-            }
-        } catch (SQLException e) {
-            System.err.println("注册教务人员时数据库错误: " + e.getMessage());
-            return false;
-        }
+        return insertRecord("academic_affairs_staff", columns, values);
     }
-    
+
     /**
      * 验证教务人员数据
      */
     private boolean validateStaffData(AcademicAffairsStaff staff) {
         if (staff == null) return false;
-        
+
         return ValidationUtil.isValidStaffId(staff.getStaffId()) &&
-               ValidationUtil.isValidName(staff.getName()) &&
-               ValidationUtil.isValidGender(staff.getGender()) &&
+               validateBasicData(staff.getStaffId(), staff.getName(),
+                               staff.getGender(), staff.getPassword()) &&
                ValidationUtil.isNotEmpty(staff.getDepartment()) &&
-               ValidationUtil.isNotEmpty(staff.getPosition()) &&
-               ValidationUtil.isValidPassword(staff.getPassword());
-    }
-    
-    /**
-     * 检查工号是否已存在
-     */
-    private boolean isStaffIdExists(String staffId) {
-        try {
-            String sql = "SELECT COUNT(*) FROM academic_affairs_staff WHERE staff_id = ?";
-            try (Connection conn = DatabaseUtil.getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                
-                pstmt.setString(1, staffId);
-                ResultSet rs = pstmt.executeQuery();
-                
-                if (rs.next()) {
-                    return rs.getInt(1) > 0;
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("检查工号时数据库错误: " + e.getMessage());
-        }
-        return false;
+               ValidationUtil.isNotEmpty(staff.getPosition());
     }
     
     /**
@@ -139,12 +99,6 @@ public class AcademicAffairsStaffService {
                     staff.setPosition(rs.getString("position"));
                     staff.setPassword(rs.getString("password"));
 
-                    // 设置创建时间
-                    Timestamp createdAt = rs.getTimestamp("created_at");
-                    if (createdAt != null) {
-                        staff.setCreatedAt(createdAt.toLocalDateTime());
-                    }
-
                     staffList.add(staff);
                 }
             }
@@ -194,46 +148,18 @@ public class AcademicAffairsStaffService {
         if (!validateStaffData(staff)) {
             return false;
         }
-        
-        try {
-            String sql = """
-                UPDATE academic_affairs_staff SET name = ?, gender = ?, department = ?,
-                position = ? WHERE staff_id = ?
-            """;
 
-            try (Connection conn = DatabaseUtil.getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        String[] columns = {"name", "gender", "department", "position"};
+        Object[] values = {staff.getName(), staff.getGender(), staff.getDepartment(), staff.getPosition()};
 
-                pstmt.setString(1, staff.getName());
-                pstmt.setString(2, staff.getGender());
-                pstmt.setString(3, staff.getDepartment());
-                pstmt.setString(4, staff.getPosition());
-                pstmt.setString(5, staff.getStaffId());
-                
-                return pstmt.executeUpdate() > 0;
-            }
-        } catch (SQLException e) {
-            System.err.println("更新教务人员信息时数据库错误: " + e.getMessage());
-            return false;
-        }
+        return updateRecord("academic_affairs_staff", columns, values, "staff_id", staff.getStaffId());
     }
-    
+
     /**
      * 删除教务人员
      */
     public boolean deleteStaff(String staffId) {
-        try {
-            String sql = "DELETE FROM academic_affairs_staff WHERE staff_id = ?";
-            try (Connection conn = DatabaseUtil.getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                
-                pstmt.setString(1, staffId);
-                return pstmt.executeUpdate() > 0;
-            }
-        } catch (SQLException e) {
-            System.err.println("删除教务人员时数据库错误: " + e.getMessage());
-            return false;
-        }
+        return deleteRecord("academic_affairs_staff", "staff_id", staffId);
     }
     
     /**

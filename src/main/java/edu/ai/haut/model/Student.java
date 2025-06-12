@@ -27,6 +27,62 @@ public class Student extends User {
         this.major = major;
         this.classId = classId;
     }
+
+    /**
+     * Builder模式构建器
+     */
+    public static class Builder {
+        private String studentId;
+        private String name;
+        private String gender;
+        private String password;
+        private String grade;
+        private String major;
+        private String classId;
+
+        public Builder studentId(String studentId) {
+            this.studentId = studentId;
+            return this;
+        }
+
+        public Builder name(String name) {
+            this.name = name;
+            return this;
+        }
+
+        public Builder gender(String gender) {
+            this.gender = gender;
+            return this;
+        }
+
+        public Builder password(String password) {
+            this.password = password;
+            return this;
+        }
+
+        public Builder grade(String grade) {
+            this.grade = grade;
+            return this;
+        }
+
+        public Builder major(String major) {
+            this.major = major;
+            return this;
+        }
+
+        public Builder classId(String classId) {
+            this.classId = classId;
+            return this;
+        }
+
+        public Student build() {
+            return new Student(studentId, name, gender, password, grade, major, classId);
+        }
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
     
     // Getter和Setter方法
     public String getGrade() {

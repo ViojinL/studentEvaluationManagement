@@ -1,7 +1,5 @@
 package edu.ai.haut.model;
 
-import java.time.LocalDateTime;
-
 /**
  * 评教指标实体类
  * 对应数据库中的evaluation_criteria表
@@ -13,13 +11,11 @@ public class EvaluationCriteria {
     private String description;    // 指标描述
     private double weight;         // 权重（百分比）
     private int maxScore;          // 最高分数
-    private LocalDateTime createdAt; // 创建时间
     
     /**
      * 默认构造函数
      */
     public EvaluationCriteria() {
-        this.createdAt = LocalDateTime.now();
         this.maxScore = 100;
     }
     
@@ -33,7 +29,6 @@ public class EvaluationCriteria {
         this.description = description;
         this.weight = weight;
         this.maxScore = maxScore;
-        this.createdAt = LocalDateTime.now();
     }
     
     // Getter和Setter方法
@@ -75,14 +70,6 @@ public class EvaluationCriteria {
     
     public void setMaxScore(int maxScore) {
         this.maxScore = maxScore;
-    }
-    
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-    
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
     }
     
     /**

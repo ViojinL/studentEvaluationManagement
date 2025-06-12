@@ -41,10 +41,25 @@ public class LoginFrame extends JFrame {
     private void initializeComponents() {
         userIdField = new JTextField(20);
         passwordField = new JPasswordField(20);
-        
+
+        // 设置输入框统一的边框样式
+        Color borderColor = new Color(200, 200, 200);
+        userIdField.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(borderColor, 1),
+            BorderFactory.createEmptyBorder(5, 8, 5, 8)
+        ));
+        passwordField.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(borderColor, 1),
+            BorderFactory.createEmptyBorder(5, 8, 5, 8)
+        ));
+
         userTypeComboBox = new JComboBox<>(new String[]{"学生", "教师", "管理员", "教务人员"});
         userTypeComboBox.setSelectedIndex(0);
-        
+        userTypeComboBox.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(borderColor, 1),
+            BorderFactory.createEmptyBorder(2, 5, 2, 5)
+        ));
+
         loginButton = new JButton("登录");
         registerButton = new JButton("注册");
         exitButton = new JButton("退出");

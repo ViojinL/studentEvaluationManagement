@@ -4,6 +4,8 @@ import edu.ai.haut.model.*;
 import edu.ai.haut.service.*;
 import edu.ai.haut.ui.LoginFrame;
 import edu.ai.haut.ui.common.ManagementUIHelper;
+import edu.ai.haut.ui.common.LayoutUtil;
+import edu.ai.haut.ui.common.TableUtil;
 import edu.ai.haut.util.DatabaseUtil;
 
 import javax.swing.*;
@@ -32,6 +34,8 @@ public class StaffMainFrame extends JFrame {
     private TeacherService teacherService;
     private CourseService courseService;
     private UserService userService;
+    private ClassService classService;
+    private StudentService studentService;
     private ManagementUIHelper managementUIHelper;
     
     private JTabbedPane tabbedPane;
@@ -39,10 +43,14 @@ public class StaffMainFrame extends JFrame {
     private JTable statisticsTable;
     private JTable courseTable;
     private JTable evaluationPeriodTable;
+    private JTable classTable;
+    private JTable userTable;
     private DefaultTableModel evaluationTableModel;
     private DefaultTableModel statisticsTableModel;
     private DefaultTableModel courseTableModel;
     private DefaultTableModel evaluationPeriodTableModel;
+    private DefaultTableModel classTableModel;
+    private DefaultTableModel userTableModel;
     
     private JLabel welcomeLabel;
     private JLabel statusLabel;
@@ -58,6 +66,8 @@ public class StaffMainFrame extends JFrame {
         this.teacherService = new TeacherService();
         this.courseService = new CourseService();
         this.userService = new UserService();
+        this.classService = new ClassService();
+        this.studentService = new StudentService();
         this.managementUIHelper = new ManagementUIHelper();
         
         initializeComponents();
@@ -88,66 +98,28 @@ public class StaffMainFrame extends JFrame {
         periodComboBox.setPreferredSize(new Dimension(200, 25));
         
         // 统计类型选择
-        statisticsTypeComboBox = new JComboBox<>(new String[]{"按教师统计", "按课程统计", "按班级统计", "按学生统计"});
+        statisticsTypeComboBox = new JComboBox<>(new String[]{"按教师统计", "按课程统计", "按学生统计"});
         statisticsTypeComboBox.setPreferredSize(new Dimension(150, 25));
         
         // 评教结果表格
         String[] evaluationColumns = {"评教编号", "课程名称", "授课教师", "班级", "总分", "等级", "评教日期"};
-        evaluationTableModel = new DefaultTableModel(evaluationColumns, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
-        };
-        evaluationTable = new JTable(evaluationTableModel);
-        evaluationTable.setRowHeight(30);
-        evaluationTable.getTableHeader().setFont(new Font("微软雅黑", Font.BOLD, 12));
-        evaluationTable.setFont(new Font("微软雅黑", Font.PLAIN, 12));
-        
+        evaluationTable = TableUtil.createReadOnlyTable(evaluationColumns);
+        evaluationTableModel = (DefaultTableModel) evaluationTable.getModel();
+
         // 统计分析表格
         String[] statisticsColumns = {"项目", "数量/分数", "百分比/等级", "备注"};
-        statisticsTableModel = new DefaultTableModel(statisticsColumns, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
-        };
-        statisticsTable = new JTable(statisticsTableModel);
-        statisticsTable.setRowHeight(30);
-        statisticsTable.getTableHeader().setFont(new Font("微软雅黑", Font.BOLD, 12));
-        statisticsTable.setFont(new Font("微软雅黑", Font.PLAIN, 12));
+        statisticsTable = TableUtil.createReadOnlyTable(statisticsColumns);
+        statisticsTableModel = (DefaultTableModel) statisticsTable.getModel();
 
         // 课程管理表格
         String[] courseColumns = {"课程编号", "课程名称", "学分", "课程类型", "开课学院"};
-        courseTableModel = new DefaultTableModel(courseColumns, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
-        };
-        courseTable = new JTable(courseTableModel);
-        courseTable.setRowHeight(30);
-        courseTable.getTableHeader().setFont(new Font("微软雅黑", Font.BOLD, 12));
-        courseTable.setFont(new Font("微软雅黑", Font.PLAIN, 12));
+        courseTable = TableUtil.createReadOnlyTable(courseColumns);
+        courseTableModel = (DefaultTableModel) courseTable.getModel();
 
         // 评教管理表格
         String[] evaluationPeriodColumns = {"周期编号", "周期名称", "学期", "开始日期", "结束日期", "状态", "评教数量"};
-        evaluationPeriodTableModel = new DefaultTableModel(evaluationPeriodColumns, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
-        };
-        evaluationPeriodTable = new JTable(evaluationPeriodTableModel);
-        evaluationPeriodTable.setRowHeight(30);
-        evaluationPeriodTable.getTableHeader().setFont(new Font("微软雅黑", Font.BOLD, 12));
-        evaluationPeriodTable.setFont(new Font("微软雅黑", Font.PLAIN, 12));
-
-        // 设置表格样式
-        managementUIHelper.setupTableStyle(evaluationTable);
-        managementUIHelper.setupTableStyle(statisticsTable);
-        managementUIHelper.setupTableStyle(courseTable);
-        managementUIHelper.setupTableStyle(evaluationPeriodTable);
+        evaluationPeriodTable = TableUtil.createReadOnlyTable(evaluationPeriodColumns);
+        evaluationPeriodTableModel = (DefaultTableModel) evaluationPeriodTable.getModel();
     }
     
 
@@ -172,16 +144,8 @@ public class StaffMainFrame extends JFrame {
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         buttonPanel.setBackground(new Color(240, 248, 255));
 
-        JButton refreshButton = new JButton("刷新");
-        JButton logoutButton = new JButton("退出登录");
-
-        refreshButton.setBackground(new Color(70, 130, 180));
-        refreshButton.setForeground(Color.WHITE);
-        refreshButton.setFocusPainted(false);
-
-        logoutButton.setBackground(new Color(220, 20, 60));
-        logoutButton.setForeground(Color.WHITE);
-        logoutButton.setFocusPainted(false);
+        JButton refreshButton = LayoutUtil.createButton("刷新", LayoutUtil.PRIMARY_COLOR);
+        JButton logoutButton = LayoutUtil.createButton("退出登录", LayoutUtil.DANGER_COLOR);
 
         buttonPanel.add(refreshButton);
         buttonPanel.add(logoutButton);
@@ -222,34 +186,10 @@ public class StaffMainFrame extends JFrame {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setBorder(BorderFactory.createTitledBorder("评教结果查询"));
         
-        // 查询条件面板
-        JPanel queryPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        queryPanel.add(new JLabel("评教周期:"));
-        queryPanel.add(periodComboBox);
-        
-        JButton queryButton = new JButton("查询");
-        JButton detailButton = new JButton("查看详情");
-        
-        queryButton.setBackground(new Color(70, 130, 180));
-        queryButton.setForeground(Color.WHITE);
-        queryButton.setFocusPainted(false);
-        
-        detailButton.setBackground(new Color(60, 179, 113));
-        detailButton.setForeground(Color.WHITE);
-        detailButton.setFocusPainted(false);
-        
-        queryPanel.add(queryButton);
-        queryPanel.add(detailButton);
-        
-        panel.add(queryPanel, BorderLayout.NORTH);
-        
+        // 直接显示评教结果表格，不需要查询条件
         JScrollPane evaluationScrollPane = new JScrollPane(evaluationTable);
         evaluationScrollPane.setPreferredSize(new Dimension(800, 400));
         panel.add(evaluationScrollPane, BorderLayout.CENTER);
-        
-        // 设置按钮事件
-        queryButton.addActionListener(e -> loadEvaluationData());
-        detailButton.addActionListener(e -> showEvaluationDetail());
         
         return panel;
     }
@@ -268,11 +208,7 @@ public class StaffMainFrame extends JFrame {
         statsQueryPanel.add(new JLabel("统计类型:"));
         statsQueryPanel.add(statisticsTypeComboBox);
 
-        JButton statsQueryButton = new JButton("生成统计");
-
-        statsQueryButton.setBackground(new Color(70, 130, 180));
-        statsQueryButton.setForeground(Color.WHITE);
-        statsQueryButton.setFocusPainted(false);
+        JButton statsQueryButton = LayoutUtil.createButton("生成统计", LayoutUtil.PRIMARY_COLOR);
 
         statsQueryPanel.add(statsQueryButton);
         
@@ -292,15 +228,7 @@ public class StaffMainFrame extends JFrame {
      * 设置事件监听器
      */
     private void setupEventListeners() {
-        // 评教结果表格双击事件
-        evaluationTable.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
-            public void mouseClicked(java.awt.event.MouseEvent e) {
-                if (e.getClickCount() == 2) {
-                    showEvaluationDetail();
-                }
-            }
-        });
+        // 评教结果查询面板现在是只读的，不需要事件监听器
     }
     
     /**
@@ -360,37 +288,37 @@ public class StaffMainFrame extends JFrame {
      */
     private void loadEvaluationData() {
         evaluationTableModel.setRowCount(0);
-        
+
         try {
-            EvaluationPeriod selectedPeriod = getSelectedPeriod();
-            if (selectedPeriod == null) {
-                return;
-            }
-            
-            // 获取所有教师的评教结果
-            List<Teacher> teachers = teacherService.getAllTeachers();
-            
-            for (Teacher teacher : teachers) {
-                List<Evaluation> evaluations = evaluationService.getTeacherEvaluationResults(
-                    teacher.getTeacherId(), selectedPeriod.getPeriodId());
-                
-                for (Evaluation evaluation : evaluations) {
-                    Object[] row = {
-                        evaluation.getEvaluationId(),
-                        evaluation.getCourseOffering() != null && evaluation.getCourseOffering().getCourse() != null ? 
-                            evaluation.getCourseOffering().getCourse().getCourseName() : "未知课程",
-                        teacher.getName(),
-                        evaluation.getCourseOffering() != null && evaluation.getCourseOffering().getClassRoom() != null ? 
-                            evaluation.getCourseOffering().getClassRoom().getClassName() : "未知班级",
-                        String.format("%.1f", evaluation.getTotalScore()),
-                        evaluation.getGrade(),
-                        evaluation.getEvaluationDate().toLocalDate().toString()
-                    };
-                    evaluationTableModel.addRow(row);
+            // 获取所有评教周期的评教记录
+            List<EvaluationPeriod> periods = evaluationService.getAllEvaluationPeriods();
+
+            for (EvaluationPeriod period : periods) {
+                // 获取所有教师在该周期的评教结果
+                List<Teacher> teachers = teacherService.getAllTeachers();
+
+                for (Teacher teacher : teachers) {
+                    List<Evaluation> evaluations = evaluationService.getTeacherEvaluationResults(
+                        teacher.getTeacherId(), period.getPeriodId());
+
+                    for (Evaluation evaluation : evaluations) {
+                        Object[] row = {
+                            evaluation.getEvaluationId(),
+                            evaluation.getCourseOffering() != null && evaluation.getCourseOffering().getCourse() != null ?
+                                evaluation.getCourseOffering().getCourse().getCourseName() : "未知课程",
+                            teacher.getName(),
+                            evaluation.getCourseOffering() != null && evaluation.getCourseOffering().getClassRoom() != null ?
+                                evaluation.getCourseOffering().getClassRoom().getClassName() : "未知班级",
+                            String.format("%.1f", evaluation.getTotalScore()),
+                            evaluation.getGrade(),
+                            evaluation.getEvaluationDate().toLocalDate().toString()
+                        };
+                        evaluationTableModel.addRow(row);
+                    }
                 }
             }
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "加载评教数据失败: " + e.getMessage(), 
+            JOptionPane.showMessageDialog(this, "加载评教数据失败: " + e.getMessage(),
                 "错误", JOptionPane.ERROR_MESSAGE);
         }
     }
@@ -415,9 +343,6 @@ public class StaffMainFrame extends JFrame {
                     break;
                 case "按课程统计":
                     loadCourseStatistics(selectedPeriod.getPeriodId());
-                    break;
-                case "按班级统计":
-                    loadClassStatistics(selectedPeriod.getPeriodId());
                     break;
                 case "按学生统计":
                     loadStudentStatistics(selectedPeriod.getPeriodId());
@@ -475,20 +400,7 @@ public class StaffMainFrame extends JFrame {
         statisticsTableModel.addRow(avgRow);
     }
     
-    /**
-     * 加载班级统计
-     */
-    private void loadClassStatistics(String periodId) {
-        Map<String, Object> stats = statisticsService.getClassEvaluationStatistics(periodId);
-        
-        Object[] avgRow = {
-            "总体平均分",
-            String.format("%.1f", (Double) stats.getOrDefault("overallAvgScore", 0.0)),
-            managementUIHelper.getGradeByScore((Double) stats.getOrDefault("overallAvgScore", 0.0)),
-            "所有班级的平均评教分数"
-        };
-        statisticsTableModel.addRow(avgRow);
-    }
+
     
     /**
      * 加载学生统计
@@ -594,13 +506,9 @@ public class StaffMainFrame extends JFrame {
         mainPanel.add(tabbedPane, BorderLayout.CENTER);
 
         // 底部按钮
-        JPanel buttonPanel = new JPanel(new FlowLayout());
-        JButton closeButton = new JButton("关闭");
-        closeButton.setBackground(new Color(70, 130, 180));
-        closeButton.setForeground(Color.WHITE);
-        closeButton.setFocusPainted(false);
+        JButton closeButton = LayoutUtil.createButton("关闭", LayoutUtil.PRIMARY_COLOR);
         closeButton.addActionListener(e -> dialog.dispose());
-        buttonPanel.add(closeButton);
+        JPanel buttonPanel = LayoutUtil.createButtonPanel(closeButton);
 
         mainPanel.add(buttonPanel, BorderLayout.SOUTH);
 
@@ -722,22 +630,17 @@ public class StaffMainFrame extends JFrame {
         // 解析评分数据
         try {
             List<EvaluationCriteria> criteriaList = evaluationService.getAllEvaluationCriteria();
-            String criteriaScores = evaluation.getCriteriaScores();
 
-            if (criteriaScores != null && !criteriaScores.isEmpty()) {
-                Map<String, Integer> scoreMap = parseEvaluationScores(criteriaScores);
-
-                for (EvaluationCriteria criteria : criteriaList) {
-                    Integer score = scoreMap.get(criteria.getCriteriaId());
-                    Object[] row = {
-                        criteria.getCriteriaName(),
-                        criteria.getDescription(),
-                        criteria.getMaxScore(),
-                        score != null ? score : 0,
-                        String.format("%.1f%%", criteria.getWeight())
-                    };
-                    tableModel.addRow(row);
-                }
+            for (EvaluationCriteria criteria : criteriaList) {
+                Integer score = evaluation.getScore(criteria.getCriteriaId());
+                Object[] row = {
+                    criteria.getCriteriaName(),
+                    criteria.getDescription(),
+                    criteria.getMaxScore(),
+                    score,
+                    String.format("%.1f%%", criteria.getWeight())
+                };
+                tableModel.addRow(row);
             }
         } catch (Exception e) {
             System.err.println("解析评分数据时出错: " + e.getMessage());
@@ -805,26 +708,10 @@ public class StaffMainFrame extends JFrame {
         // 工具栏
         JPanel toolPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 
-        JButton addCourseButton = new JButton("添加课程");
-        JButton editCourseButton = new JButton("编辑课程");
-        JButton deleteCourseButton = new JButton("删除课程");
-        JButton manageOfferingsButton = new JButton("开课管理");
-
-        addCourseButton.setBackground(new Color(60, 179, 113));
-        addCourseButton.setForeground(Color.WHITE);
-        addCourseButton.setFocusPainted(false);
-
-        editCourseButton.setBackground(new Color(255, 165, 0));
-        editCourseButton.setForeground(Color.WHITE);
-        editCourseButton.setFocusPainted(false);
-
-        deleteCourseButton.setBackground(new Color(220, 20, 60));
-        deleteCourseButton.setForeground(Color.WHITE);
-        deleteCourseButton.setFocusPainted(false);
-
-        manageOfferingsButton.setBackground(new Color(70, 130, 180));
-        manageOfferingsButton.setForeground(Color.WHITE);
-        manageOfferingsButton.setFocusPainted(false);
+        JButton addCourseButton = LayoutUtil.createButton("添加课程", LayoutUtil.SUCCESS_COLOR);
+        JButton editCourseButton = LayoutUtil.createButton("编辑课程", LayoutUtil.WARNING_COLOR);
+        JButton deleteCourseButton = LayoutUtil.createButton("删除课程", LayoutUtil.DANGER_COLOR);
+        JButton manageOfferingsButton = LayoutUtil.createButton("开课管理", LayoutUtil.PRIMARY_COLOR);
 
         toolPanel.add(addCourseButton);
         toolPanel.add(editCourseButton);
@@ -872,26 +759,10 @@ public class StaffMainFrame extends JFrame {
         // 工具栏
         JPanel toolPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 
-        JButton addPeriodButton = new JButton("创建评教周期");
-        JButton editPeriodButton = new JButton("编辑周期");
-        JButton manageCriteriaButton = new JButton("评教指标管理");
-        JButton evaluationStatsButton = new JButton("评教统计");
-
-        addPeriodButton.setBackground(new Color(60, 179, 113));
-        addPeriodButton.setForeground(Color.WHITE);
-        addPeriodButton.setFocusPainted(false);
-
-        editPeriodButton.setBackground(new Color(255, 165, 0));
-        editPeriodButton.setForeground(Color.WHITE);
-        editPeriodButton.setFocusPainted(false);
-
-        manageCriteriaButton.setBackground(new Color(70, 130, 180));
-        manageCriteriaButton.setForeground(Color.WHITE);
-        manageCriteriaButton.setFocusPainted(false);
-
-        evaluationStatsButton.setBackground(new Color(138, 43, 226));
-        evaluationStatsButton.setForeground(Color.WHITE);
-        evaluationStatsButton.setFocusPainted(false);
+        JButton addPeriodButton = LayoutUtil.createButton("创建评教周期", LayoutUtil.SUCCESS_COLOR);
+        JButton editPeriodButton = LayoutUtil.createButton("编辑周期", LayoutUtil.WARNING_COLOR);
+        JButton manageCriteriaButton = LayoutUtil.createButton("评教指标管理", LayoutUtil.PRIMARY_COLOR);
+        JButton evaluationStatsButton = LayoutUtil.createButton("评教统计", new Color(138, 43, 226));
 
         toolPanel.add(addPeriodButton);
         toolPanel.add(editPeriodButton);
@@ -971,61 +842,6 @@ public class StaffMainFrame extends JFrame {
         }
     }
 
-    /**
-     * 解析评分数据字符串为Map
-     */
-    private Map<String, Integer> parseEvaluationScores(String criteriaScores) {
-        Map<String, Integer> scoreMap = new HashMap<>();
-
-        if (criteriaScores == null || criteriaScores.trim().isEmpty()) {
-            return scoreMap;
-        }
-
-        try {
-            // 检查是否为JSON格式
-            if (criteriaScores.trim().startsWith("{") && criteriaScores.trim().endsWith("}")) {
-                // JSON格式：{"C001":85,"C002":90}
-                String json = criteriaScores.trim();
-                // 移除大括号
-                json = json.substring(1, json.length() - 1);
-
-                // 按逗号分割键值对
-                String[] pairs = json.split(",");
-                for (String pair : pairs) {
-                    // 按冒号分割键和值
-                    String[] parts = pair.split(":");
-                    if (parts.length == 2) {
-                        try {
-                            // 移除引号和空格
-                            String key = parts[0].trim().replaceAll("\"", "");
-                            String value = parts[1].trim().replaceAll("\"", "");
-                            scoreMap.put(key, Integer.parseInt(value));
-                        } catch (NumberFormatException e) {
-                            System.err.println("解析分数值时出错: " + parts[1] + " - " + e.getMessage());
-                        }
-                    }
-                }
-            } else {
-                // 简单的键值对格式：C001:85,C002:90
-                String[] pairs = criteriaScores.split(",");
-                for (String pair : pairs) {
-                    String[] parts = pair.split(":");
-                    if (parts.length == 2) {
-                        try {
-                            scoreMap.put(parts[0].trim(), Integer.parseInt(parts[1].trim()));
-                        } catch (NumberFormatException e) {
-                            System.err.println("解析分数值时出错: " + parts[1] + " - " + e.getMessage());
-                        }
-                    }
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("解析评分数据时出错: " + e.getMessage());
-        }
-
-        return scoreMap;
-    }
-
     private void showCourseOfferingsDialog() {
         JDialog dialog = new JDialog(this, "开课管理", true);
         dialog.setSize(800, 600);
@@ -1057,26 +873,10 @@ public class StaffMainFrame extends JFrame {
         // 按钮面板
         JPanel buttonPanel = new JPanel(new FlowLayout());
 
-        JButton addButton = new JButton("添加开课");
-        JButton editButton = new JButton("编辑开课");
-        JButton deleteButton = new JButton("删除开课");
-        JButton closeButton = new JButton("关闭");
-
-        addButton.setBackground(new Color(60, 179, 113));
-        addButton.setForeground(Color.WHITE);
-        addButton.setFocusPainted(false);
-
-        editButton.setBackground(new Color(255, 165, 0));
-        editButton.setForeground(Color.WHITE);
-        editButton.setFocusPainted(false);
-
-        deleteButton.setBackground(new Color(220, 20, 60));
-        deleteButton.setForeground(Color.WHITE);
-        deleteButton.setFocusPainted(false);
-
-        closeButton.setBackground(new Color(70, 130, 180));
-        closeButton.setForeground(Color.WHITE);
-        closeButton.setFocusPainted(false);
+        JButton addButton = LayoutUtil.createButton("添加开课", LayoutUtil.SUCCESS_COLOR);
+        JButton editButton = LayoutUtil.createButton("编辑开课", LayoutUtil.WARNING_COLOR);
+        JButton deleteButton = LayoutUtil.createButton("删除开课", LayoutUtil.DANGER_COLOR);
+        JButton closeButton = LayoutUtil.createButton("关闭", LayoutUtil.PRIMARY_COLOR);
 
         buttonPanel.add(addButton);
         buttonPanel.add(editButton);
@@ -1231,20 +1031,9 @@ public class StaffMainFrame extends JFrame {
         panel.add(scheduleField, gbc);
 
         // 按钮面板
-        JPanel buttonPanel = new JPanel(new FlowLayout());
-        JButton saveButton = new JButton("保存");
-        JButton cancelButton = new JButton("取消");
-
-        saveButton.setBackground(new Color(60, 179, 113));
-        saveButton.setForeground(Color.WHITE);
-        saveButton.setFocusPainted(false);
-
-        cancelButton.setBackground(new Color(220, 20, 60));
-        cancelButton.setForeground(Color.WHITE);
-        cancelButton.setFocusPainted(false);
-
-        buttonPanel.add(saveButton);
-        buttonPanel.add(cancelButton);
+        JButton saveButton = LayoutUtil.createButton("保存", LayoutUtil.SUCCESS_COLOR);
+        JButton cancelButton = LayoutUtil.createButton("取消", LayoutUtil.DANGER_COLOR);
+        JPanel buttonPanel = LayoutUtil.createButtonPanel(saveButton, cancelButton);
 
         gbc.gridx = 0; gbc.gridy = 6;
         gbc.gridwidth = 2; gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -1398,20 +1187,9 @@ public class StaffMainFrame extends JFrame {
             panel.add(scheduleField, gbc);
 
             // 按钮面板
-            JPanel buttonPanel = new JPanel(new FlowLayout());
-            JButton saveButton = new JButton("保存");
-            JButton cancelButton = new JButton("取消");
-
-            saveButton.setBackground(new Color(60, 179, 113));
-            saveButton.setForeground(Color.WHITE);
-            saveButton.setFocusPainted(false);
-
-            cancelButton.setBackground(new Color(220, 20, 60));
-            cancelButton.setForeground(Color.WHITE);
-            cancelButton.setFocusPainted(false);
-
-            buttonPanel.add(saveButton);
-            buttonPanel.add(cancelButton);
+            JButton saveButton = LayoutUtil.createButton("保存", LayoutUtil.SUCCESS_COLOR);
+            JButton cancelButton = LayoutUtil.createButton("取消", LayoutUtil.DANGER_COLOR);
+            JPanel buttonPanel = LayoutUtil.createButtonPanel(saveButton, cancelButton);
 
             gbc.gridx = 0; gbc.gridy = 6;
             gbc.gridwidth = 2; gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -1490,7 +1268,7 @@ public class StaffMainFrame extends JFrame {
 
         JComboBox<String> periodComboBox = new JComboBox<>();
         JComboBox<String> statisticsTypeComboBox = new JComboBox<>(new String[]{
-            "总体统计", "教师排名", "课程排名", "班级统计", "学院统计"
+            "总体统计", "教师排名", "课程排名", "学院统计"
         });
 
         // 加载评教周期
@@ -1503,11 +1281,7 @@ public class StaffMainFrame extends JFrame {
             JOptionPane.showMessageDialog(dialog, "加载评教周期失败: " + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
         }
 
-        JButton generateButton = new JButton("生成统计");
-
-        generateButton.setBackground(new Color(70, 130, 180));
-        generateButton.setForeground(Color.WHITE);
-        generateButton.setFocusPainted(false);
+        JButton generateButton = LayoutUtil.createButton("生成统计", LayoutUtil.PRIMARY_COLOR);
 
         controlPanel.add(new JLabel("评教周期:"));
         controlPanel.add(periodComboBox);
@@ -1600,9 +1374,7 @@ public class StaffMainFrame extends JFrame {
                 case "课程排名":
                     generateCourseRanking(periodId, tableModel, analysisArea);
                     break;
-                case "班级统计":
-                    generateClassStatistics(periodId, tableModel, analysisArea);
-                    break;
+
                 case "学院统计":
                     generateCollegeStatistics(periodId, tableModel, analysisArea);
                     break;
@@ -1841,70 +1613,7 @@ public class StaffMainFrame extends JFrame {
         }
     }
 
-    /**
-     * 生成班级统计
-     */
-    private void generateClassStatistics(String periodId, DefaultTableModel tableModel, JTextArea analysisArea) {
-        try {
-            String sql = """
-                SELECT cl.class_id, cl.class_name, cl.grade, cl.major, cl.college,
-                       AVG(e.total_score) as avg_score, COUNT(e.evaluation_id) as eval_count,
-                       COUNT(DISTINCT e.student_id) as student_count
-                FROM classes cl
-                JOIN course_offerings co ON cl.class_id = co.class_id
-                JOIN evaluations e ON co.offering_id = e.offering_id
-                WHERE e.period_id = ?
-                GROUP BY cl.class_id, cl.class_name, cl.grade, cl.major, cl.college
-                ORDER BY avg_score DESC
-            """;
 
-            try (Connection conn = DatabaseUtil.getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-                pstmt.setString(1, periodId);
-                ResultSet rs = pstmt.executeQuery();
-
-                int rank = 1;
-                StringBuilder analysis = new StringBuilder();
-                analysis.append("=== 班级评教统计分析 ===\n\n");
-
-                while (rs.next()) {
-                    String classId = rs.getString("class_id");
-                    String className = rs.getString("class_name");
-                    String grade = rs.getString("grade");
-                    String major = rs.getString("major");
-                    String college = rs.getString("college");
-                    double avgScore = rs.getDouble("avg_score");
-                    int evalCount = rs.getInt("eval_count");
-                    int studentCount = rs.getInt("student_count");
-
-                    tableModel.addRow(new Object[]{
-                        className + "(" + classId + ")",
-                        String.format("%.2f", avgScore),
-                        String.format("%.1f%%", studentCount > 0 ? evalCount * 100.0 / studentCount : 0),
-                        String.valueOf(rank),
-                        grade + " " + major + " | " + college
-                    });
-
-                    if (rank <= 5) {
-                        analysis.append(String.format("第%d名：%s，平均分%.2f，参与学生%d人\n",
-                            rank, className, avgScore, studentCount));
-                    }
-
-                    rank++;
-                }
-
-                analysis.append("\n分析建议：\n");
-                analysis.append("1. 关注各班级学生参与评教的积极性\n");
-                analysis.append("2. 分析不同年级、专业间的评教差异\n");
-                analysis.append("3. 加强班级学风建设，提高评教质量\n");
-
-                analysisArea.setText(analysis.toString());
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("生成班级统计失败: " + e.getMessage(), e);
-        }
-    }
 
     /**
      * 生成学院统计
@@ -1968,13 +1677,6 @@ public class StaffMainFrame extends JFrame {
             throw new RuntimeException("生成学院统计失败: " + e.getMessage(), e);
         }
     }
-
-
-
-
-
-
-
     /**
      * 退出登录
      */

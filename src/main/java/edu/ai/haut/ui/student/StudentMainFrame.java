@@ -3,6 +3,7 @@ package edu.ai.haut.ui.student;
 import edu.ai.haut.model.*;
 import edu.ai.haut.service.*;
 import edu.ai.haut.ui.LoginFrame;
+import edu.ai.haut.ui.common.TableUtil;
 import edu.ai.haut.ui.student.StudentMainFrame.ButtonEditor;
 import edu.ai.haut.ui.student.StudentMainFrame.ButtonRenderer;
 
@@ -76,14 +77,11 @@ public class StudentMainFrame extends JFrame {
             }
         };
         courseTable = new JTable(courseTableModel);
-        courseTable.setRowHeight(30);
-        courseTable.getTableHeader().setFont(new Font("微软雅黑", Font.BOLD, 12));
-        courseTable.setFont(new Font("微软雅黑", Font.PLAIN, 12));
 
         // 设置操作列的按钮渲染器和编辑器
         courseTable.getColumn("操作").setCellRenderer(new ButtonRenderer());
         courseTable.getColumn("操作").setCellEditor(new ButtonEditor(new JCheckBox()));
-        
+
         // 评教历史表格
         String[] historyColumns = {"评教编号", "课程名称", "授课教师", "评教周期", "总分", "等级", "评教日期"};
         historyTableModel = new DefaultTableModel(historyColumns, 0) {
@@ -93,10 +91,7 @@ public class StudentMainFrame extends JFrame {
             }
         };
         historyTable = new JTable(historyTableModel);
-        historyTable.setRowHeight(30);
-        historyTable.getTableHeader().setFont(new Font("微软雅黑", Font.BOLD, 12));
-        historyTable.setFont(new Font("微软雅黑", Font.PLAIN, 12));
-        
+
         // 设置表格样式
         setupTableStyle(courseTable);
         setupTableStyle(historyTable);
@@ -106,11 +101,7 @@ public class StudentMainFrame extends JFrame {
      * 设置表格样式
      */
     private void setupTableStyle(JTable table) {
-        table.setSelectionBackground(new Color(184, 207, 229));
-        table.setSelectionForeground(Color.BLACK);
-        table.setGridColor(new Color(230, 230, 230));
-        table.getTableHeader().setBackground(new Color(240, 248, 255));
-        table.getTableHeader().setForeground(Color.BLACK);
+        TableUtil.styleTable(table);
     }
     
     /**
@@ -198,20 +189,6 @@ public class StudentMainFrame extends JFrame {
                             JOptionPane.showMessageDialog(StudentMainFrame.this, 
                                 "该课程已完成评教", "提示", JOptionPane.INFORMATION_MESSAGE);
                         }
-                    }
-                }
-            }
-        });
-        
-        // 历史表格双击事件
-        historyTable.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
-            public void mouseClicked(java.awt.event.MouseEvent e) {
-                if (e.getClickCount() == 2) {
-                    int row = historyTable.getSelectedRow();
-                    if (row >= 0) {
-                        String evaluationId = (String) historyTableModel.getValueAt(row, 0);
-                        showEvaluationDetails(evaluationId);
                     }
                 }
             }
@@ -337,13 +314,7 @@ public class StudentMainFrame extends JFrame {
         }
     }
     
-    /**
-     * 显示评教详情
-     */
-    private void showEvaluationDetails(String evaluationId) {
-        // 这里可以实现显示评教详情的对话框
-        JOptionPane.showMessageDialog(this, "评教详情功能待实现", "提示", JOptionPane.INFORMATION_MESSAGE);
-    }
+
     
 
     

@@ -12,7 +12,7 @@ import java.util.List;
  * 教师服务类
  * 处理教师相关的业务逻辑
  */
-public class TeacherService {
+public class TeacherService extends BaseService {
     
     /**
      * 注册教师
@@ -22,70 +22,30 @@ public class TeacherService {
         if (!validateTeacherData(teacher)) {
             return false;
         }
-        
+
         // 检查工号是否已存在
-        if (isTeacherIdExists(teacher.getTeacherId())) {
+        if (isIdExists("teachers", "teacher_id", teacher.getTeacherId())) {
             return false;
         }
-        
-        try {
-            String sql = """
-                INSERT INTO teachers (teacher_id, name, gender, title, college, password)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """;
 
-            try (Connection conn = DatabaseUtil.getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        String[] columns = {"teacher_id", "name", "gender", "title", "college", "password"};
+        Object[] values = {teacher.getTeacherId(), teacher.getName(), teacher.getGender(),
+                          teacher.getTitle(), teacher.getCollege(), teacher.getPassword()};
 
-                pstmt.setString(1, teacher.getTeacherId());
-                pstmt.setString(2, teacher.getName());
-                pstmt.setString(3, teacher.getGender());
-                pstmt.setString(4, teacher.getTitle());
-                pstmt.setString(5, teacher.getCollege());
-                pstmt.setString(6, teacher.getPassword());
-                
-                return pstmt.executeUpdate() > 0;
-            }
-        } catch (SQLException e) {
-            System.err.println("注册教师时数据库错误: " + e.getMessage());
-            return false;
-        }
+        return insertRecord("teachers", columns, values);
     }
-    
+
     /**
      * 验证教师数据
      */
     private boolean validateTeacherData(Teacher teacher) {
         if (teacher == null) return false;
-        
+
         return ValidationUtil.isValidTeacherId(teacher.getTeacherId()) &&
-               ValidationUtil.isValidName(teacher.getName()) &&
-               ValidationUtil.isValidGender(teacher.getGender()) &&
+               validateBasicData(teacher.getTeacherId(), teacher.getName(),
+                               teacher.getGender(), teacher.getPassword()) &&
                ValidationUtil.isNotEmpty(teacher.getTitle()) &&
-               ValidationUtil.isNotEmpty(teacher.getCollege()) &&
-               ValidationUtil.isValidPassword(teacher.getPassword());
-    }
-    
-    /**
-     * 检查工号是否已存在
-     */
-    private boolean isTeacherIdExists(String teacherId) {
-        try {
-            String sql = "SELECT COUNT(*) FROM teachers WHERE teacher_id = ?";
-            try (Connection conn = DatabaseUtil.getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                
-                pstmt.setString(1, teacherId);
-                ResultSet rs = pstmt.executeQuery();
-                
-                if (rs.next()) {
-                    return rs.getInt(1) > 0;
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("检查工号时数据库错误: " + e.getMessage());
-        }
-        return false;
+               ValidationUtil.isNotEmpty(teacher.getCollege());
     }
     
     /**
@@ -187,46 +147,18 @@ public class TeacherService {
         if (!validateTeacherData(teacher)) {
             return false;
         }
-        
-        try {
-            String sql = """
-                UPDATE teachers SET name = ?, gender = ?, title = ?, college = ?
-                WHERE teacher_id = ?
-            """;
 
-            try (Connection conn = DatabaseUtil.getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        String[] columns = {"name", "gender", "title", "college"};
+        Object[] values = {teacher.getName(), teacher.getGender(), teacher.getTitle(), teacher.getCollege()};
 
-                pstmt.setString(1, teacher.getName());
-                pstmt.setString(2, teacher.getGender());
-                pstmt.setString(3, teacher.getTitle());
-                pstmt.setString(4, teacher.getCollege());
-                pstmt.setString(5, teacher.getTeacherId());
-                
-                return pstmt.executeUpdate() > 0;
-            }
-        } catch (SQLException e) {
-            System.err.println("更新教师信息时数据库错误: " + e.getMessage());
-            return false;
-        }
+        return updateRecord("teachers", columns, values, "teacher_id", teacher.getTeacherId());
     }
-    
+
     /**
      * 删除教师
      */
     public boolean deleteTeacher(String teacherId) {
-        try {
-            String sql = "DELETE FROM teachers WHERE teacher_id = ?";
-            try (Connection conn = DatabaseUtil.getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                
-                pstmt.setString(1, teacherId);
-                return pstmt.executeUpdate() > 0;
-            }
-        } catch (SQLException e) {
-            System.err.println("删除教师时数据库错误: " + e.getMessage());
-            return false;
-        }
+        return deleteRecord("teachers", "teacher_id", teacherId);
     }
     
     /**

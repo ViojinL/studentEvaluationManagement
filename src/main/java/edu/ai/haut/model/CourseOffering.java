@@ -1,7 +1,5 @@
 package edu.ai.haut.model;
 
-import java.time.LocalDateTime;
-
 /**
  * 开课信息实体类
  * 对应数据库中的course_offerings表
@@ -14,7 +12,6 @@ public class CourseOffering {
     private String classId;        // 上课班级编号
     private String semester;       // 学期
     private String schedule;       // 上课时间
-    private LocalDateTime createdAt; // 创建时间
     
     // 关联对象（用于显示详细信息）
     private Course course;         // 课程对象
@@ -25,13 +22,12 @@ public class CourseOffering {
      * 默认构造函数
      */
     public CourseOffering() {
-        this.createdAt = LocalDateTime.now();
     }
     
     /**
      * 带参数的构造函数
      */
-    public CourseOffering(String offeringId, String courseId, String teacherId, 
+    public CourseOffering(String offeringId, String courseId, String teacherId,
                          String classId, String semester, String schedule) {
         this.offeringId = offeringId;
         this.courseId = courseId;
@@ -39,7 +35,6 @@ public class CourseOffering {
         this.classId = classId;
         this.semester = semester;
         this.schedule = schedule;
-        this.createdAt = LocalDateTime.now();
     }
     
     // Getter和Setter方法
@@ -89,14 +84,6 @@ public class CourseOffering {
     
     public void setSchedule(String schedule) {
         this.schedule = schedule;
-    }
-    
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-    
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
     }
     
     public Course getCourse() {

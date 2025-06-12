@@ -1,7 +1,5 @@
 package edu.ai.haut.model;
 
-import java.time.LocalDateTime;
-
 /**
  * 课程实体类
  * 对应数据库中的courses表
@@ -13,26 +11,23 @@ public class Course {
     private double credits;        // 学分
     private String courseType;     // 课程类型（必修、选修、实践）
     private String college;        // 开课学院
-    private LocalDateTime createdAt; // 创建时间
     
     /**
      * 默认构造函数
      */
     public Course() {
-        this.createdAt = LocalDateTime.now();
     }
-    
+
     /**
      * 带参数的构造函数
      */
-    public Course(String courseId, String courseName, double credits, 
+    public Course(String courseId, String courseName, double credits,
                   String courseType, String college) {
         this.courseId = courseId;
         this.courseName = courseName;
         this.credits = credits;
         this.courseType = courseType;
         this.college = college;
-        this.createdAt = LocalDateTime.now();
     }
     
     // Getter和Setter方法
@@ -71,17 +66,9 @@ public class Course {
     public String getCollege() {
         return college;
     }
-    
+
     public void setCollege(String college) {
         this.college = college;
-    }
-    
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-    
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
     }
     
     /**

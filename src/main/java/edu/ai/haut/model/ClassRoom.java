@@ -1,7 +1,5 @@
 package edu.ai.haut.model;
 
-import java.time.LocalDateTime;
-
 /**
  * 班级实体类
  * 对应数据库中的classes表
@@ -14,13 +12,11 @@ public class ClassRoom {
     private String major;          // 专业
     private String college;        // 所属学院
     private int studentCount;      // 学生人数
-    private LocalDateTime createdAt; // 创建时间
     
     /**
      * 默认构造函数
      */
     public ClassRoom() {
-        this.createdAt = LocalDateTime.now();
         this.studentCount = 0;
     }
     
@@ -35,7 +31,6 @@ public class ClassRoom {
         this.major = major;
         this.college = college;
         this.studentCount = 0;
-        this.createdAt = LocalDateTime.now();
     }
     
     // Getter和Setter方法
@@ -85,14 +80,6 @@ public class ClassRoom {
     
     public void setStudentCount(int studentCount) {
         this.studentCount = studentCount;
-    }
-    
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-    
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
     }
     
     /**

@@ -12,79 +12,65 @@ import java.util.List;
  * 班级服务类
  * 处理班级相关的业务逻辑
  */
-public class ClassService {
+public class ClassService extends BaseService {
     
     /**
      * 创建班级
      */
     public boolean createClass(ClassRoom classRoom) {
+        System.out.println("ClassService.createClass() 开始创建班级...");
+        System.out.println("班级信息: " + classRoom.getClassId() + " - " + classRoom.getClassName());
+
         // 数据验证
         if (!validateClassData(classRoom)) {
+            System.out.println("ClassService.createClass() 数据验证失败");
             return false;
         }
-        
+        System.out.println("ClassService.createClass() 数据验证通过");
+
         // 检查班级编号是否已存在
-        if (isClassIdExists(classRoom.getClassId())) {
+        if (isIdExists("classes", "class_id", classRoom.getClassId())) {
+            System.out.println("ClassService.createClass() 班级编号已存在: " + classRoom.getClassId());
             return false;
         }
-        
-        try {
-            String sql = """
-                INSERT INTO classes (class_id, class_name, grade, major, college, student_count) 
-                VALUES (?, ?, ?, ?, ?, ?)
-            """;
-            
-            try (Connection conn = DatabaseUtil.getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                
-                pstmt.setString(1, classRoom.getClassId());
-                pstmt.setString(2, classRoom.getClassName());
-                pstmt.setString(3, classRoom.getGrade());
-                pstmt.setString(4, classRoom.getMajor());
-                pstmt.setString(5, classRoom.getCollege());
-                pstmt.setInt(6, classRoom.getStudentCount());
-                
-                return pstmt.executeUpdate() > 0;
-            }
-        } catch (SQLException e) {
-            System.err.println("创建班级时数据库错误: " + e.getMessage());
-            return false;
-        }
+        System.out.println("ClassService.createClass() 班级编号检查通过");
+
+        String[] columns = {"class_id", "class_name", "grade", "major", "college", "student_count"};
+        Object[] values = {classRoom.getClassId(), classRoom.getClassName(), classRoom.getGrade(),
+                          classRoom.getMajor(), classRoom.getCollege(), classRoom.getStudentCount()};
+
+        System.out.println("ClassService.createClass() 准备插入数据库...");
+        boolean result = insertRecord("classes", columns, values);
+        System.out.println("ClassService.createClass() 插入结果: " + result);
+
+        return result;
     }
-    
+
     /**
      * 验证班级数据
      */
     private boolean validateClassData(ClassRoom classRoom) {
-        if (classRoom == null) return false;
-        
-        return ValidationUtil.isNotEmpty(classRoom.getClassId()) &&
-               ValidationUtil.isValidClassName(classRoom.getClassName()) &&
-               ValidationUtil.isValidGrade(classRoom.getGrade()) &&
-               ValidationUtil.isNotEmpty(classRoom.getMajor()) &&
-               ValidationUtil.isNotEmpty(classRoom.getCollege());
-    }
-    
-    /**
-     * 检查班级编号是否已存在
-     */
-    private boolean isClassIdExists(String classId) {
-        try {
-            String sql = "SELECT COUNT(*) FROM classes WHERE class_id = ?";
-            try (Connection conn = DatabaseUtil.getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                
-                pstmt.setString(1, classId);
-                ResultSet rs = pstmt.executeQuery();
-                
-                if (rs.next()) {
-                    return rs.getInt(1) > 0;
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("检查班级编号时数据库错误: " + e.getMessage());
+        if (classRoom == null) {
+            System.out.println("validateClassData: classRoom is null");
+            return false;
         }
-        return false;
+
+        boolean classIdValid = ValidationUtil.isNotEmpty(classRoom.getClassId());
+        boolean classNameValid = ValidationUtil.isValidClassName(classRoom.getClassName());
+        boolean gradeValid = ValidationUtil.isValidGrade(classRoom.getGrade());
+        boolean majorValid = ValidationUtil.isNotEmpty(classRoom.getMajor());
+        boolean collegeValid = ValidationUtil.isNotEmpty(classRoom.getCollege());
+
+        System.out.println("validateClassData: classId='" + classRoom.getClassId() + "' valid=" + classIdValid);
+        System.out.println("validateClassData: className='" + classRoom.getClassName() + "' valid=" + classNameValid);
+        System.out.println("validateClassData: grade='" + classRoom.getGrade() + "' valid=" + gradeValid);
+        System.out.println("validateClassData: major='" + classRoom.getMajor() + "' valid=" + majorValid);
+        System.out.println("validateClassData: college='" + classRoom.getCollege() + "' valid=" + collegeValid);
+
+        boolean result = classIdValid && classNameValid && gradeValid && majorValid && collegeValid;
+        System.out.println("validateClassData: 总体验证结果=" + result);
+
+        return result;
     }
     
     /**
@@ -240,59 +226,19 @@ public class ClassService {
         return classes;
     }
     
-    /**
-     * 更新班级信息
-     */
-    public boolean updateClass(ClassRoom classRoom) {
-        if (!validateClassData(classRoom)) {
-            return false;
-        }
-        
-        try {
-            String sql = """
-                UPDATE classes SET class_name = ?, grade = ?, major = ?, college = ? 
-                WHERE class_id = ?
-            """;
-            
-            try (Connection conn = DatabaseUtil.getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                
-                pstmt.setString(1, classRoom.getClassName());
-                pstmt.setString(2, classRoom.getGrade());
-                pstmt.setString(3, classRoom.getMajor());
-                pstmt.setString(4, classRoom.getCollege());
-                pstmt.setString(5, classRoom.getClassId());
-                
-                return pstmt.executeUpdate() > 0;
-            }
-        } catch (SQLException e) {
-            System.err.println("更新班级信息时数据库错误: " + e.getMessage());
-            return false;
-        }
-    }
-    
+
+
     /**
      * 删除班级
      */
     public boolean deleteClass(String classId) {
-        try {
-            // 检查班级是否有学生
-            ClassRoom classRoom = getClassById(classId);
-            if (classRoom != null && classRoom.getStudentCount() > 0) {
-                return false; // 班级有学生，不能删除
-            }
-            
-            String sql = "DELETE FROM classes WHERE class_id = ?";
-            try (Connection conn = DatabaseUtil.getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                
-                pstmt.setString(1, classId);
-                return pstmt.executeUpdate() > 0;
-            }
-        } catch (SQLException e) {
-            System.err.println("删除班级时数据库错误: " + e.getMessage());
-            return false;
+        // 检查班级是否有学生
+        ClassRoom classRoom = getClassById(classId);
+        if (classRoom != null && classRoom.getStudentCount() > 0) {
+            return false; // 班级有学生，不能删除
         }
+
+        return deleteRecord("classes", "class_id", classId);
     }
     
     /**

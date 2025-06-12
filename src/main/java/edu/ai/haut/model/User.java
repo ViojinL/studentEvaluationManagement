@@ -1,26 +1,22 @@
 package edu.ai.haut.model;
 
-import java.time.LocalDateTime;
-
 /**
  * 用户基类
  * 所有用户类型的公共属性和方法
  */
 public abstract class User {
-    
+
     protected String id;           // 用户ID（学号/工号/管理员ID）
     protected String name;         // 姓名
     protected String gender;       // 性别
     protected String password;     // 密码
-    protected LocalDateTime createdAt; // 创建时间
     
     /**
      * 默认构造函数
      */
     public User() {
-        this.createdAt = LocalDateTime.now();
     }
-    
+
     /**
      * 带参数的构造函数
      */
@@ -29,7 +25,6 @@ public abstract class User {
         this.name = name;
         this.gender = gender;
         this.password = password;
-        this.createdAt = LocalDateTime.now();
     }
     
     // Getter和Setter方法
@@ -63,14 +58,6 @@ public abstract class User {
     
     public void setPassword(String password) {
         this.password = password;
-    }
-    
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-    
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
     }
     
     /**

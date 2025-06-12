@@ -154,82 +154,49 @@ public class Evaluation {
      */
     private void parseScores() {
         scoreMap.clear();
-        if (criteriaScores != null && !criteriaScores.trim().isEmpty()) {
-            try {
-                // 检查是否为JSON格式
-                if (criteriaScores.trim().startsWith("{") && criteriaScores.trim().endsWith("}")) {
-                    // JSON格式：{"C001":85,"C002":90}
-                    parseJsonScores();
-                } else {
-                    // 简单的键值对格式：C001:85,C002:90
-                    parseSimpleScores();
-                }
-            } catch (Exception e) {
-                System.err.println("解析评分数据时出错: " + e.getMessage());
-                // 如果解析失败，保持scoreMap为空
-            }
+        if (criteriaScores == null || criteriaScores.trim().isEmpty()) {
+            return;
         }
-    }
 
-    /**
-     * 解析JSON格式的分数
-     */
-    private void parseJsonScores() {
-        String json = criteriaScores.trim();
-        // 移除大括号
-        json = json.substring(1, json.length() - 1);
+        try {
+            String data = criteriaScores.trim();
+            // 统一处理JSON和简单格式
+            if (data.startsWith("{") && data.endsWith("}")) {
+                data = data.substring(1, data.length() - 1); // 移除大括号
+            }
 
-        // 按逗号分割键值对
-        String[] pairs = json.split(",");
-        for (String pair : pairs) {
-            // 按冒号分割键和值
-            String[] parts = pair.split(":");
-            if (parts.length == 2) {
-                try {
-                    // 移除引号和空格
+            // 解析键值对
+            for (String pair : data.split(",")) {
+                String[] parts = pair.split(":");
+                if (parts.length == 2) {
                     String key = parts[0].trim().replaceAll("\"", "");
                     String value = parts[1].trim().replaceAll("\"", "");
                     scoreMap.put(key, Integer.parseInt(value));
-                } catch (NumberFormatException e) {
-                    System.err.println("解析分数值时出错: " + parts[1] + " - " + e.getMessage());
                 }
             }
-        }
-    }
-
-    /**
-     * 解析简单格式的分数
-     */
-    private void parseSimpleScores() {
-        String[] pairs = criteriaScores.split(",");
-        for (String pair : pairs) {
-            String[] parts = pair.split(":");
-            if (parts.length == 2) {
-                try {
-                    scoreMap.put(parts[0].trim(), Integer.parseInt(parts[1].trim()));
-                } catch (NumberFormatException e) {
-                    System.err.println("解析分数值时出错: " + parts[1] + " - " + e.getMessage());
-                }
-            }
+        } catch (Exception e) {
+            System.err.println("解析评分数据时出错: " + e.getMessage());
         }
     }
     
     /**
-     * 构建分数字符串
+     * 构建分数字符串（JSON格式）
      */
     private void buildScoresString() {
         if (scoreMap.isEmpty()) {
             criteriaScores = "";
-        } else {
-            StringBuilder sb = new StringBuilder();
-            for (Map.Entry<String, Integer> entry : scoreMap.entrySet()) {
-                if (sb.length() > 0) {
-                    sb.append(",");
-                }
-                sb.append(entry.getKey()).append(":").append(entry.getValue());
-            }
-            criteriaScores = sb.toString();
+            return;
         }
+
+        StringBuilder sb = new StringBuilder("{");
+        boolean first = true;
+        for (Map.Entry<String, Integer> entry : scoreMap.entrySet()) {
+            if (!first) sb.append(",");
+            sb.append("\"").append(entry.getKey()).append("\":").append(entry.getValue());
+            first = false;
+        }
+        sb.append("}");
+        criteriaScores = sb.toString();
     }
     
     /**

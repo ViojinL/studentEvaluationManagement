@@ -148,59 +148,5 @@ public class ValidationUtil {
                "已完成".equals(status) || "已关闭".equals(status);
     }
     
-    /**
-     * 生成学号（如：231210400111）
-     * @param year 年份后两位（如：23）
-     * @param majorCode 专业代码4位（如：1210）
-     * @param classCode 班级代码2位（如：40）
-     * @param sequence 序号3位（如：011）
-     */
-    public static String generateStudentId(int year, String majorCode, String classCode, int sequence) {
-        return String.format("%02d%s%s%03d", year, majorCode, classCode, sequence);
-    }
 
-    /**
-     * 生成教师工号
-     * @param year 年份
-     * @param sequence 序号
-     */
-    public static String generateTeacherId(int year, int sequence) {
-        return String.format("T%04d%04d", year, sequence);
-    }
-
-    /**
-     * 生成教务人员工号
-     * @param year 年份
-     * @param sequence 序号
-     */
-    public static String generateStaffId(int year, int sequence) {
-        return String.format("S%04d%04d", year, sequence);
-    }
-
-    /**
-     * 生成管理员ID
-     * @param sequence 序号
-     */
-    public static String generateAdminId(int sequence) {
-        return String.format("ADMIN%03d", sequence);
-    }
-
-    /**
-     * 生成班级名称（如：软件工程2301）
-     * @param majorName 专业名称
-     * @param year 年份后两位
-     * @param classSequence 班级序号
-     */
-    public static String generateClassName(String majorName, int year, int classSequence) {
-        return String.format("%s%02d%02d", majorName, year, classSequence);
-    }
-
-    /**
-     * 生成课程编号
-     * @param collegeCode 学院代码
-     * @param sequence 课程序号
-     */
-    public static String generateCourseId(String collegeCode, int sequence) {
-        return String.format("%s%04d", collegeCode.toUpperCase(), sequence);
-    }
 }

@@ -66,14 +66,7 @@
                         <arg>--enable-preview</arg>
                     </args>
                 </configuration>
-                <executions>
-                    <execution>
-                        <id>reset-database</id>
-                        <configuration>
-                            <mainClass>edu.ai.haut.util.DatabaseResetTool</mainClass>
-                        </configuration>
-                    </execution>
-                </executions>
+
             </plugin>
 
             <!-- Maven Surefire 测试插件 -->

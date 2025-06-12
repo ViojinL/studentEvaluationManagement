@@ -12,7 +12,7 @@ import java.util.List;
  * 课程服务类
  * 处理课程和开课信息相关的业务逻辑
  */
-public class CourseService {
+public class CourseService extends BaseService {
     
     /**
      * 创建课程
@@ -68,22 +68,7 @@ public class CourseService {
      * 检查课程编号是否已存在
      */
     private boolean isCourseIdExists(String courseId) {
-        try {
-            String sql = "SELECT COUNT(*) FROM courses WHERE course_id = ?";
-            try (Connection conn = DatabaseUtil.getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                
-                pstmt.setString(1, courseId);
-                ResultSet rs = pstmt.executeQuery();
-                
-                if (rs.next()) {
-                    return rs.getInt(1) > 0;
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("检查课程编号时数据库错误: " + e.getMessage());
-        }
-        return false;
+        return DatabaseUtil.recordExists("courses", "course_id", courseId);
     }
     
     /**
@@ -216,7 +201,7 @@ public class CourseService {
         }
 
         // 检查开课编号是否已存在
-        if (isOfferingIdExists(offering.getOfferingId())) {
+        if (isIdExists("course_offerings", "offering_id", offering.getOfferingId())) {
             return false;
         }
 
@@ -289,27 +274,7 @@ public class CourseService {
                ValidationUtil.isNotEmpty(offering.getSemester());
     }
     
-    /**
-     * 检查开课编号是否已存在
-     */
-    private boolean isOfferingIdExists(String offeringId) {
-        try {
-            String sql = "SELECT COUNT(*) FROM course_offerings WHERE offering_id = ?";
-            try (Connection conn = DatabaseUtil.getConnection();
-                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
-                
-                pstmt.setString(1, offeringId);
-                ResultSet rs = pstmt.executeQuery();
-                
-                if (rs.next()) {
-                    return rs.getInt(1) > 0;
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("检查开课编号时数据库错误: " + e.getMessage());
-        }
-        return false;
-    }
+
     
     /**
      * 获取学生的课程列表（根据班级）
@@ -636,4 +601,5 @@ public class CourseService {
 
         return classes;
     }
+
 }

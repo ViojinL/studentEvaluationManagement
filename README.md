@@ -77,7 +77,6 @@ src/main/java/edu/ai/haut/
 │   ├── Course.java                # 课程实体
 │   ├── CourseOffering.java        # 开课信息实体
 │   ├── EvaluationCriteria.java    # 评教指标实体
-│   ├── EvaluationTemplate.java    # 评教模板实体
 │   ├── Evaluation.java            # 评教记录实体
 │   ├── EvaluationPeriod.java      # 评教周期实体
 │   ├── Administrator.java         # 管理员实体
@@ -136,7 +135,7 @@ mvn exec:java
 - **courses**: 课程信息表
 - **course_offerings**: 开课信息表
 - **evaluation_criteria**: 评教指标表
-- **evaluation_templates**: 评教模板表
+
 - **evaluations**: 评教记录表
 - **evaluation_periods**: 评教周期表
 - **administrators**: 管理员表
@@ -146,7 +145,7 @@ mvn exec:java
 
 ### 业务特性
 - **多角色权限管理**：不同用户角色具有不同的系统权限
-- **灵活的评教模板**：支持不同课程类型使用不同的评教指标
+- **标准化评教指标**：统一的评教指标体系，确保评教结果的可比性
 - **完整的评教流程**：从评教周期设置到结果统计的完整流程
 - **实时数据统计**：支持多维度的实时数据统计和分析
 

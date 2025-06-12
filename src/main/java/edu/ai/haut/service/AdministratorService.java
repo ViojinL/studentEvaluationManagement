@@ -21,24 +21,19 @@ public class AdministratorService {
      */
     public List<Administrator> getAllAdministrators() throws SQLException {
         List<Administrator> administrators = new ArrayList<>();
-        String sql = "SELECT * FROM administrators ORDER BY created_at DESC";
-        
+        String sql = "SELECT * FROM administrators ORDER BY admin_id";
+
         try (Connection conn = DatabaseUtil.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql);
              ResultSet rs = pstmt.executeQuery()) {
-            
+
             while (rs.next()) {
                 Administrator admin = new Administrator();
                 admin.setAdminId(rs.getString("admin_id"));
                 admin.setName(rs.getString("name"));
                 admin.setGender(rs.getString("gender"));
                 admin.setPassword(rs.getString("password"));
-                
-                Timestamp createdAt = rs.getTimestamp("created_at");
-                if (createdAt != null) {
-                    admin.setCreatedAt(createdAt.toLocalDateTime());
-                }
-                
+
                 administrators.add(admin);
             }
         }
@@ -64,12 +59,7 @@ public class AdministratorService {
                     admin.setName(rs.getString("name"));
                     admin.setGender(rs.getString("gender"));
                     admin.setPassword(rs.getString("password"));
-                    
-                    Timestamp createdAt = rs.getTimestamp("created_at");
-                    if (createdAt != null) {
-                        admin.setCreatedAt(createdAt.toLocalDateTime());
-                    }
-                    
+
                     return admin;
                 }
             }
@@ -151,12 +141,7 @@ public class AdministratorService {
                     admin.setName(rs.getString("name"));
                     admin.setGender(rs.getString("gender"));
                     admin.setPassword(rs.getString("password"));
-                    
-                    Timestamp createdAt = rs.getTimestamp("created_at");
-                    if (createdAt != null) {
-                        admin.setCreatedAt(createdAt.toLocalDateTime());
-                    }
-                    
+
                     return admin;
                 }
             }

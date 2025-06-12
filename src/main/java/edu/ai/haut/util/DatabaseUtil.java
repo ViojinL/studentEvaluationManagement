@@ -17,8 +17,8 @@ public class DatabaseUtil {
 
     static {
         try {
-            // 加载HSQLDB驱动
-            Class.forName("org.hsqldb.jdbcDriver");
+            // 加载HSQLDB驱动 - 正确的驱动类名
+            Class.forName("org.hsqldb.jdbc.JDBCDriver");
             initializeDatabase();
         } catch (ClassNotFoundException e) {
             throw new RuntimeException("无法加载HSQLDB驱动", e);
@@ -63,8 +63,7 @@ public class DatabaseUtil {
                 admin_id VARCHAR(20) PRIMARY KEY,
                 name VARCHAR(50) NOT NULL,
                 gender VARCHAR(10),
-                password VARCHAR(100) NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                password VARCHAR(100) NOT NULL
             )
             """,
             
@@ -76,8 +75,7 @@ public class DatabaseUtil {
                 grade VARCHAR(10) NOT NULL,
                 major VARCHAR(100) NOT NULL,
                 college VARCHAR(100) NOT NULL,
-                student_count INTEGER DEFAULT 0,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                student_count INTEGER DEFAULT 0
             )
             """,
             
@@ -91,7 +89,6 @@ public class DatabaseUtil {
                 major VARCHAR(100) NOT NULL,
                 class_id VARCHAR(20) NOT NULL,
                 password VARCHAR(100) NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (class_id) REFERENCES classes(class_id)
             )
             """,
@@ -104,8 +101,7 @@ public class DatabaseUtil {
                 gender VARCHAR(10),
                 title VARCHAR(50),
                 college VARCHAR(100) NOT NULL,
-                password VARCHAR(100) NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                password VARCHAR(100) NOT NULL
             )
             """,
 
@@ -117,8 +113,7 @@ public class DatabaseUtil {
                 gender VARCHAR(10),
                 department VARCHAR(100) NOT NULL,
                 position VARCHAR(50),
-                password VARCHAR(100) NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                password VARCHAR(100) NOT NULL
             )
             """,
             
@@ -129,8 +124,7 @@ public class DatabaseUtil {
                 course_name VARCHAR(100) NOT NULL,
                 credits DECIMAL(3,1) NOT NULL,
                 course_type VARCHAR(20) NOT NULL,
-                college VARCHAR(100) NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                college VARCHAR(100) NOT NULL
             )
             """,
             
@@ -143,7 +137,6 @@ public class DatabaseUtil {
                 class_id VARCHAR(20) NOT NULL,
                 semester VARCHAR(20) NOT NULL,
                 schedule VARCHAR(200),
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (course_id) REFERENCES courses(course_id),
                 FOREIGN KEY (teacher_id) REFERENCES teachers(teacher_id),
                 FOREIGN KEY (class_id) REFERENCES classes(class_id)
@@ -157,22 +150,11 @@ public class DatabaseUtil {
                 criteria_name VARCHAR(100) NOT NULL,
                 description VARCHAR(500),
                 weight DECIMAL(5,2) NOT NULL,
-                max_score INTEGER DEFAULT 100,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                max_score INTEGER DEFAULT 100
             )
             """,
             
-            // 评教模板表
-            """
-            CREATE TABLE IF NOT EXISTS evaluation_templates (
-                template_id VARCHAR(20) PRIMARY KEY,
-                template_name VARCHAR(100) NOT NULL,
-                course_type VARCHAR(20) NOT NULL,
-                criteria_ids VARCHAR(1000) NOT NULL,
-                is_active BOOLEAN DEFAULT TRUE,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-            """,
+
             
             // 评教周期表
             """
@@ -182,8 +164,7 @@ public class DatabaseUtil {
                 semester VARCHAR(20) NOT NULL,
                 start_date DATE NOT NULL,
                 end_date DATE NOT NULL,
-                status VARCHAR(20) DEFAULT '未开始',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                status VARCHAR(20) DEFAULT '未开始'
             )
             """,
             
@@ -283,28 +264,18 @@ public class DatabaseUtil {
     }
     
     /**
-     * 执行查询
+     * 通用批量插入数据方法
      */
-    public static ResultSet executeQuery(String sql, Object... params) throws SQLException {
-        Connection conn = getConnection();
-        PreparedStatement pstmt = conn.prepareStatement(sql);
-        for (int i = 0; i < params.length; i++) {
-            pstmt.setObject(i + 1, params[i]);
-        }
-        return pstmt.executeQuery();
-    }
-    
-    /**
-     * 执行更新
-     */
-    public static int executeUpdate(String sql, Object... params) throws SQLException {
-        try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            for (int i = 0; i < params.length; i++) {
-                pstmt.setObject(i + 1, params[i]);
+    private static void batchInsert(Connection conn, String sql, Object[][] data, String dataType) throws SQLException {
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            for (Object[] row : data) {
+                for (int i = 0; i < row.length; i++) {
+                    pstmt.setObject(i + 1, row[i]);
+                }
+                pstmt.executeUpdate();
             }
-            return pstmt.executeUpdate();
         }
+        System.out.println("插入了 " + data.length + " 个" + dataType);
     }
 
     // ==================== 数据插入方法 ====================
@@ -314,48 +285,23 @@ public class DatabaseUtil {
      */
     private static void insertAdministrators(Connection conn) throws SQLException {
         String sql = "INSERT INTO administrators (admin_id, name, gender, password) VALUES (?, ?, ?, ?)";
-
-        Object[][] adminData = {
-            {"ADMIN001", "系统管理员", "男", "123456"}
-        };
-
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            for (Object[] data : adminData) {
-                for (int i = 0; i < data.length; i++) {
-                    pstmt.setObject(i + 1, data[i]);
-                }
-                pstmt.executeUpdate();
-            }
-        }
-        System.out.println("插入了 " + adminData.length + " 个管理员");
+        Object[][] data = {{"ADMIN001", "系统管理员", "男", "123456"}};
+        batchInsert(conn, sql, data, "管理员");
     }
 
     /**
      * 插入班级数据
      */
     private static void insertClasses(Connection conn) throws SQLException {
-        String sql = """
-            INSERT INTO classes (class_id, class_name, grade, major, college, student_count)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """;
-
-        Object[][] classData = {
-            {"软件工程2301", "软件工程2301班", "23", "软件工程", "人工智能与大数据学院", 0},
-            {"软件工程2302", "软件工程2302班", "23", "软件工程", "人工智能与大数据学院", 0},
-            {"计算机2301", "计算机科学与技术2301班", "23", "计算机科学与技术", "信息科学与工程学院", 0},
-            {"计算机2302", "计算机科学与技术2302班", "23", "计算机科学与技术", "信息科学与工程学院", 0},
-            {"数据科学2301", "数据科学与大数据技术2301班", "23", "数据科学与大数据技术", "人工智能与大数据学院", 0}
+        String sql = "INSERT INTO classes (class_id, class_name, grade, major, college, student_count) VALUES (?, ?, ?, ?, ?, ?)";
+        Object[][] data = {
+            {"SE2301", "软件工程2301班", "23", "软件工程", "人工智能与大数据学院", 0},
+            {"SE2302", "软件工程2302班", "23", "软件工程", "人工智能与大数据学院", 0},
+            {"CS2301", "计算机科学与技术2301班", "23", "计算机科学与技术", "信息科学与工程学院", 0},
+            {"CS2302", "计算机科学与技术2302班", "23", "计算机科学与技术", "信息科学与工程学院", 0},
+            {"DS2301", "数据科学与大数据技术2301班", "23", "数据科学与大数据技术", "人工智能与大数据学院", 0}
         };
-
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            for (Object[] data : classData) {
-                for (int i = 0; i < data.length; i++) {
-                    pstmt.setObject(i + 1, data[i]);
-                }
-                pstmt.executeUpdate();
-            }
-        }
-        System.out.println("插入了 " + classData.length + " 个班级");
+        batchInsert(conn, sql, data, "班级");
     }
 
     /**
@@ -368,31 +314,22 @@ public class DatabaseUtil {
         """;
 
         Object[][] studentData = {
-            {"231210400111", "张三", "男", "23", "软件工程", "软件工程2301", "123456"},
-            {"231210400112", "李四", "女", "23", "软件工程", "软件工程2301", "123456"},
-            {"231210400113", "王五", "男", "23", "软件工程", "软件工程2301", "123456"},
-            {"231210400121", "赵六", "女", "23", "软件工程", "软件工程2302", "123456"},
-            {"231210400122", "钱七", "男", "23", "软件工程", "软件工程2302", "123456"},
-            {"231210500111", "孙八", "女", "23", "计算机科学与技术", "计算机2301", "123456"},
-            {"231210500112", "周九", "男", "23", "计算机科学与技术", "计算机2301", "123456"},
-            {"231210500121", "吴十", "女", "23", "计算机科学与技术", "计算机2302", "123456"},
-            {"231210600111", "郑一", "男", "23", "数据科学与大数据技术", "数据科学2301", "123456"},
-            {"231210600112", "王二", "女", "23", "数据科学与大数据技术", "数据科学2301", "123456"}
+            {"231210400111", "张三", "男", "23", "软件工程", "SE2301", "123456"},
+            {"231210400112", "李四", "女", "23", "软件工程", "SE2301", "123456"},
+            {"231210400113", "王五", "男", "23", "软件工程", "SE2301", "123456"},
+            {"231210400121", "赵六", "女", "23", "软件工程", "SE2302", "123456"},
+            {"231210400122", "钱七", "男", "23", "软件工程", "SE2302", "123456"},
+            {"231210500111", "孙八", "女", "23", "计算机科学与技术", "CS2301", "123456"},
+            {"231210500112", "周九", "男", "23", "计算机科学与技术", "CS2301", "123456"},
+            {"231210500121", "吴十", "女", "23", "计算机科学与技术", "CS2302", "123456"},
+            {"231210600111", "郑一", "男", "23", "数据科学与大数据技术", "DS2301", "123456"},
+            {"231210600112", "王二", "女", "23", "数据科学与大数据技术", "DS2301", "123456"}
         };
 
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            for (Object[] data : studentData) {
-                for (int i = 0; i < data.length; i++) {
-                    pstmt.setObject(i + 1, data[i]);
-                }
-                pstmt.executeUpdate();
-            }
-        }
+        batchInsert(conn, sql, studentData, "学生");
 
         // 更新班级学生数量
         updateClassStudentCount(conn);
-
-        System.out.println("插入了 " + studentData.length + " 个学生");
     }
 
     /**
@@ -428,15 +365,7 @@ public class DatabaseUtil {
             {"T20240006", "赵副教授", "女", "副教授", "人工智能与大数据学院", "123456"}
         };
 
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            for (Object[] data : teacherData) {
-                for (int i = 0; i < data.length; i++) {
-                    pstmt.setObject(i + 1, data[i]);
-                }
-                pstmt.executeUpdate();
-            }
-        }
-        System.out.println("插入了 " + teacherData.length + " 个教师");
+        batchInsert(conn, sql, teacherData, "教师");
     }
 
     /**
@@ -454,15 +383,7 @@ public class DatabaseUtil {
             {"S20240003", "教务员", "女", "教务处", "教务员", "123456"}
         };
 
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            for (Object[] data : staffData) {
-                for (int i = 0; i < data.length; i++) {
-                    pstmt.setObject(i + 1, data[i]);
-                }
-                pstmt.executeUpdate();
-            }
-        }
-        System.out.println("插入了 " + staffData.length + " 个教务人员");
+        batchInsert(conn, sql, staffData, "教务人员");
     }
 
     /**
@@ -487,15 +408,7 @@ public class DatabaseUtil {
             {"AI0007", "移动应用开发", 2.0, "选修", "人工智能与大数据学院"}
         };
 
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            for (Object[] data : courseData) {
-                for (int i = 0; i < data.length; i++) {
-                    pstmt.setObject(i + 1, data[i]);
-                }
-                pstmt.executeUpdate();
-            }
-        }
-        System.out.println("插入了 " + courseData.length + " 门课程");
+        batchInsert(conn, sql, courseData, "门课程");
     }
 
     /**
@@ -508,27 +421,19 @@ public class DatabaseUtil {
         """;
 
         Object[][] offeringData = {
-            {"OFF001", "AI0001", "T20240001", "软件工程2301", "2025-1", "周一 1-2节"},
-            {"OFF002", "AI0001", "T20240001", "软件工程2302", "2025-1", "周一 3-4节"},
-            {"OFF003", "IS0001", "T20240002", "软件工程2301", "2025-1", "周二 1-2节"},
-            {"OFF004", "IS0001", "T20240002", "计算机2301", "2025-1", "周二 3-4节"},
-            {"OFF005", "AI0002", "T20240003", "软件工程2301", "2025-1", "周三 1-2节"},
-            {"OFF006", "AI0002", "T20240003", "计算机2301", "2025-1", "周三 3-4节"},
-            {"OFF007", "AI0003", "T20240004", "软件工程2301", "2025-1", "周四 1-2节"},
-            {"OFF008", "IS0002", "T20240005", "计算机2301", "2025-1", "周四 3-4节"},
-            {"OFF009", "AI0004", "T20240006", "软件工程2301", "2025-1", "周五 1-2节"},
-            {"OFF010", "AI0005", "T20240001", "数据科学2301", "2025-1", "周五 3-4节"}
+            {"OFF001", "AI0001", "T20240001", "SE2301", "2025-1", "周一 1-2节"},
+            {"OFF002", "AI0001", "T20240001", "SE2302", "2025-1", "周一 3-4节"},
+            {"OFF003", "IS0001", "T20240002", "SE2301", "2025-1", "周二 1-2节"},
+            {"OFF004", "IS0001", "T20240002", "CS2301", "2025-1", "周二 3-4节"},
+            {"OFF005", "AI0002", "T20240003", "SE2301", "2025-1", "周三 1-2节"},
+            {"OFF006", "AI0002", "T20240003", "CS2301", "2025-1", "周三 3-4节"},
+            {"OFF007", "AI0003", "T20240004", "SE2301", "2025-1", "周四 1-2节"},
+            {"OFF008", "IS0002", "T20240005", "CS2301", "2025-1", "周四 3-4节"},
+            {"OFF009", "AI0004", "T20240006", "SE2301", "2025-1", "周五 1-2节"},
+            {"OFF010", "AI0005", "T20240001", "DS2301", "2025-1", "周五 3-4节"}
         };
 
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            for (Object[] data : offeringData) {
-                for (int i = 0; i < data.length; i++) {
-                    pstmt.setObject(i + 1, data[i]);
-                }
-                pstmt.executeUpdate();
-            }
-        }
-        System.out.println("插入了 " + offeringData.length + " 个开课信息");
+        batchInsert(conn, sql, offeringData, "个开课信息");
     }
 
     /**
@@ -548,15 +453,7 @@ public class DatabaseUtil {
             {"C005", "师生互动", "与学生的交流和互动情况", 20.0, 100}
         };
 
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            for (Object[] data : criteriaData) {
-                for (int i = 0; i < data.length; i++) {
-                    pstmt.setObject(i + 1, data[i]);
-                }
-                pstmt.executeUpdate();
-            }
-        }
-        System.out.println("插入了 " + criteriaData.length + " 个评教指标");
+        batchInsert(conn, sql, criteriaData, "个评教指标");
     }
 
     /**
@@ -577,15 +474,7 @@ public class DatabaseUtil {
             {"P006", "2025年春季学期期末评教", "2025-1", "2025-06-01", "2025-06-15", "进行中"}
         };
 
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            for (Object[] data : periodData) {
-                for (int i = 0; i < data.length; i++) {
-                    pstmt.setObject(i + 1, data[i]);
-                }
-                pstmt.executeUpdate();
-            }
-        }
-        System.out.println("插入了 " + periodData.length + " 个评教周期");
+        batchInsert(conn, sql, periodData, "个评教周期");
     }
 
     /**
@@ -616,16 +505,115 @@ public class DatabaseUtil {
             {"E009", "231210400112", "OFF005", "P006", "{\"C001\":87,\"C002\":89,\"C003\":90,\"C004\":92,\"C005\":88}", 89.2, "数据库课程很实用"}
         };
 
-        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            for (Object[] data : evaluationData) {
-                for (int i = 0; i < data.length; i++) {
-                    pstmt.setObject(i + 1, data[i]);
-                }
-                pstmt.executeUpdate();
-            }
-        }
-        System.out.println("插入了 " + evaluationData.length + " 条评教记录");
+        batchInsert(conn, sql, evaluationData, "条评教记录");
     }
 
+    /**
+     * 通用检查记录是否存在的方法
+     */
+    public static boolean recordExists(String tableName, String columnName, String value) {
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(
+                 String.format("SELECT COUNT(*) FROM %s WHERE %s = ?", tableName, columnName))) {
+
+            pstmt.setString(1, value);
+            ResultSet rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
+            }
+        } catch (SQLException e) {
+            System.err.println("检查记录存在性时出错: " + e.getMessage());
+        }
+        return false;
+    }
+
+    /**
+     * 通用的插入操作
+     */
+    public static boolean insertRecord(String tableName, String[] columns, Object[] values) {
+        if (columns.length != values.length) {
+            return false;
+        }
+
+        StringBuilder sql = new StringBuilder("INSERT INTO ");
+        sql.append(tableName).append(" (");
+
+        for (int i = 0; i < columns.length; i++) {
+            sql.append(columns[i]);
+            if (i < columns.length - 1) sql.append(", ");
+        }
+
+        sql.append(") VALUES (");
+        for (int i = 0; i < values.length; i++) {
+            sql.append("?");
+            if (i < values.length - 1) sql.append(", ");
+        }
+        sql.append(")");
+
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql.toString())) {
+
+            for (int i = 0; i < values.length; i++) {
+                pstmt.setObject(i + 1, values[i]);
+            }
+
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("插入记录时数据库错误: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 通用的更新操作
+     */
+    public static boolean updateRecord(String tableName, String[] setColumns, Object[] setValues,
+                                     String whereColumn, Object whereValue) {
+        if (setColumns.length != setValues.length) {
+            return false;
+        }
+
+        StringBuilder sql = new StringBuilder("UPDATE ");
+        sql.append(tableName).append(" SET ");
+
+        for (int i = 0; i < setColumns.length; i++) {
+            sql.append(setColumns[i]).append(" = ?");
+            if (i < setColumns.length - 1) sql.append(", ");
+        }
+
+        sql.append(" WHERE ").append(whereColumn).append(" = ?");
+
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql.toString())) {
+
+            for (int i = 0; i < setValues.length; i++) {
+                pstmt.setObject(i + 1, setValues[i]);
+            }
+            pstmt.setObject(setValues.length + 1, whereValue);
+
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("更新记录时数据库错误: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 通用的删除操作
+     */
+    public static boolean deleteRecord(String tableName, String whereColumn, Object whereValue) {
+        String sql = String.format("DELETE FROM %s WHERE %s = ?", tableName, whereColumn);
+
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setObject(1, whereValue);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("删除记录时数据库错误: " + e.getMessage());
+            return false;
+        }
+    }
 
 }
